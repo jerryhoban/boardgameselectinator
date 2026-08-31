@@ -20,10 +20,13 @@
     --danger-text: #8a4230;
     --focus: #2c6b53;
     --shadow: 0 1px 2px rgba(20, 40, 30, 0.06), 0 8px 24px -12px rgba(20, 40, 30, 0.18);
+    --field-bg: #fff6b8;
+    --field-text: #332900;
+    --field-border: #d9c058;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #101c17; --surface: #16241d; --surface-2: #1d2f26; --text: #e8f0e9;
+      --bg: #101c17; --surface: #1a2c24; --surface-2: #1d2f26; --text: #e8f0e9;
       --text-muted: #9bb0a2; --border: #2a4238; --accent: #5fa886; --accent-strong: #7ccaa8;
       --accent-ink: #0e1a15; --amber: #dfa561; --best-bg: #1c3320; --best-text: #8fd39f;
       --rec-bg: #3a2c17; --rec-text: #f0c78c; --danger-text: #e3a08e; --focus: #7ccaa8;
@@ -31,7 +34,7 @@
     }
   }
   :root[data-theme="dark"] {
-    --bg: #101c17; --surface: #16241d; --surface-2: #1d2f26; --text: #e8f0e9;
+    --bg: #101c17; --surface: #1a2c24; --surface-2: #1d2f26; --text: #e8f0e9;
     --text-muted: #9bb0a2; --border: #2a4238; --accent: #5fa886; --accent-strong: #7ccaa8;
     --accent-ink: #0e1a15; --amber: #dfa561; --best-bg: #1c3320; --best-text: #8fd39f;
     --rec-bg: #3a2c17; --rec-text: #f0c78c; --danger-text: #e3a08e; --focus: #7ccaa8;
@@ -52,27 +55,29 @@
   .field + .field { margin-top: 20px; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
-  select, .stepper input {
-    width: 100%; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
-    color: var(--text); font-family: 'Work Sans', sans-serif; font-size: 14px; font-weight: 500;
+  select, .stepper input, .age-input-wrap input {
+    width: 100%; border: 1px solid var(--field-border); border-radius: 10px; background: var(--field-bg);
+    color: var(--field-text); font-family: 'Work Sans', sans-serif; font-size: 14px; font-weight: 500;
     padding: 10px 12px; appearance: none;
   }
   select {
-    background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%), linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+    background-image: linear-gradient(45deg, transparent 50%, var(--field-text) 50%), linear-gradient(135deg, var(--field-text) 50%, transparent 50%);
     background-position: calc(100% - 18px) calc(50% - 3px), calc(100% - 13px) calc(50% - 3px);
     background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
     padding-right: 34px;
+  }
+  select::placeholder, .stepper input::placeholder, .age-input-wrap input::placeholder, .range-row input::placeholder {
+    color: var(--field-text); opacity: 0.5;
   }
   .stepper { display: flex; align-items: center; gap: 10px; }
   .stepper button { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--accent); font-size: 18px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
   .stepper button:hover { border-color: var(--accent); }
   .stepper input { text-align: center; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 16px; }
 
-  .optional-label { text-transform: none; font-weight: 400; letter-spacing: 0; color: var(--text-muted); }
   .age-input-wrap { max-width: 140px; }
 
   .range-row { display: flex; align-items: center; gap: 10px; }
-  .range-row input { width: 100%; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; padding: 10px 10px; text-align: center; }
+  .range-row input { width: 100%; border: 1px solid var(--field-border); border-radius: 10px; background: var(--field-bg); color: var(--field-text); font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; padding: 10px 10px; text-align: center; }
   .range-row .to { font-size: 12px; color: var(--text-muted); flex-shrink: 0; font-family: 'Work Sans', sans-serif; }
   .range-hint { margin: 6px 0 0; font-size: 11.5px; color: var(--text-muted); }
 
@@ -147,7 +152,7 @@
       </div>
 
       <div class="field">
-        <label class="field-label" for="youngest-age-input">Youngest player's age <span class="optional-label">(optional)</span></label>
+        <label class="field-label" for="youngest-age-input">Youngest player's age</label>
         <div class="age-input-wrap">
           <input id="youngest-age-input" type="number" min="1" max="110" inputmode="numeric" placeholder="No limit" />
         </div>
@@ -236,7 +241,7 @@
   </section>
 
   <footer>
-    Prototype v4 &mdash; filters modeled on the "Selectinator" tab of Jerry's spreadsheet (player count, type, play time and complexity as min/max ranges, mechanics and theme), plus an optional youngest-player-age check carried over from the original concept. Play time and complexity use each game's average across its listed range. Mechanics/Theme is Claude's split of the spreadsheet's single Tags list using standard BGG terminology — worth a review. Games without manual tagging in the spreadsheet show as uncategorized, and games without a saved BGG image show a placeholder.
+    Prototype v4 &mdash; filters modeled on the "Selectinator" tab of Jerry's spreadsheet (player count, type, play time and complexity as min/max ranges, mechanics and theme), plus a youngest-player-age check carried over from the original concept (every field here is optional). Play time and complexity use each game's average across its listed range. Mechanics/Theme is Claude's split of the spreadsheet's single Tags list using standard BGG terminology — worth a review. Games without manual tagging in the spreadsheet show as uncategorized, and games without a saved BGG image show a placeholder.
   </footer>
 </div>
 
@@ -331,6 +336,17 @@
     minEl.addEventListener('blur', commitMin);
     maxEl.addEventListener('change', commitMax);
     maxEl.addEventListener('blur', commitMax);
+
+    // Chrome (and others) filter a datalist's suggestions against whatever
+    // text is already sitting in the box — so a field showing "500" only
+    // offers options containing "500" once opened, which is why every value
+    // but 500 disappeared from the max field's dropdown. Clearing the field
+    // on focus makes an empty string match everything, so the full preset
+    // list shows up; if the user tabs/clicks away without picking or typing
+    // anything, commitMin/commitMax above already restores the last valid
+    // value (an empty field clamps to null and falls back to state).
+    minEl.addEventListener('focus', function () { minEl.value = ''; });
+    maxEl.addEventListener('focus', function () { maxEl.value = ''; });
   }
   bindRange('time-min', 'time-max', 'timeMin', 'timeMax');
   bindRange('complexity-min', 'complexity-max', 'complexityMin', 'complexityMax');
