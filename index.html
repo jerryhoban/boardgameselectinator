@@ -166,20 +166,45 @@
       <div class="field">
         <label class="field-label">Play time (minutes)</label>
         <div class="range-row">
-          <input id="time-min" type="number" min="0" max="400" step="5" value="0" inputmode="numeric" aria-label="Minimum play time" />
+          <input id="time-min" type="number" min="0" max="500" step="5" value="0" inputmode="numeric" aria-label="Minimum play time" list="time-options" />
           <span class="to">to</span>
-          <input id="time-max" type="number" min="0" max="400" step="5" value="400" inputmode="numeric" aria-label="Maximum play time" />
+          <input id="time-max" type="number" min="0" max="500" step="5" value="500" inputmode="numeric" aria-label="Maximum play time" list="time-options" />
         </div>
+        <datalist id="time-options">
+          <option value="0"></option>
+          <option value="30"></option>
+          <option value="45"></option>
+          <option value="60"></option>
+          <option value="90"></option>
+          <option value="120"></option>
+          <option value="150"></option>
+          <option value="180"></option>
+          <option value="500" label="No limit"></option>
+        </datalist>
+        <p class="range-hint">Pick from the list or type your own minute value</p>
       </div>
 
       <div class="field">
         <label class="field-label">Complexity (1&ndash;5)</label>
         <div class="range-row">
-          <input id="complexity-min" type="number" min="0" max="5" step="0.1" value="0" inputmode="decimal" aria-label="Minimum complexity" />
+          <input id="complexity-min" type="number" min="0" max="5" step="0.1" value="0" inputmode="decimal" aria-label="Minimum complexity" list="complexity-options" />
           <span class="to">to</span>
-          <input id="complexity-max" type="number" min="0" max="5" step="0.1" value="5" inputmode="decimal" aria-label="Maximum complexity" />
+          <input id="complexity-max" type="number" min="0" max="5" step="0.1" value="5" inputmode="decimal" aria-label="Maximum complexity" list="complexity-options" />
         </div>
-        <p class="range-hint">BGG weight: 1 = light, 3 = medium, 5 = heavy</p>
+        <datalist id="complexity-options">
+          <option value="0"></option>
+          <option value="0.5"></option>
+          <option value="1"></option>
+          <option value="1.5"></option>
+          <option value="2"></option>
+          <option value="2.5"></option>
+          <option value="3"></option>
+          <option value="3.5"></option>
+          <option value="4"></option>
+          <option value="4.5"></option>
+          <option value="5"></option>
+        </datalist>
+        <p class="range-hint">BGG weight: 1 = light, 3 = medium, 5 = heavy &mdash; pick from the list or type your own</p>
       </div>
 
       <div class="field field-row">
@@ -238,7 +263,7 @@
   populateSelect('mech-select', Object.keys(mechSet));
   populateSelect('theme-select', Object.keys(themeSet));
 
-  var state = { players: 4, youngestAge: null, type: 'Any', timeMin: 0, timeMax: 400, complexityMin: 0, complexityMax: 5, mech: 'Any', theme: 'Any' };
+  var state = { players: 4, youngestAge: null, type: 'Any', timeMin: 0, timeMax: 500, complexityMin: 0, complexityMax: 5, mech: 'Any', theme: 'Any' };
   var currentResults = [];
   var currentDetail = null;
 
