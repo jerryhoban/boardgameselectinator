@@ -166,9 +166,9 @@
       <div class="field">
         <label class="field-label">Play time (minutes)</label>
         <div class="range-row">
-          <input id="time-min" type="number" min="0" max="500" step="5" value="0" inputmode="numeric" aria-label="Minimum play time" list="time-options" />
+          <input id="time-min" type="text" value="0" inputmode="numeric" autocomplete="off" aria-label="Minimum play time" list="time-options" data-min="0" data-max="500" />
           <span class="to">to</span>
-          <input id="time-max" type="number" min="0" max="500" step="5" value="500" inputmode="numeric" aria-label="Maximum play time" list="time-options" />
+          <input id="time-max" type="text" value="500" inputmode="numeric" autocomplete="off" aria-label="Maximum play time" list="time-options" data-min="0" data-max="500" />
         </div>
         <datalist id="time-options">
           <option value="0"></option>
@@ -187,9 +187,9 @@
       <div class="field">
         <label class="field-label">Complexity (1&ndash;5)</label>
         <div class="range-row">
-          <input id="complexity-min" type="number" min="0" max="5" step="0.1" value="0" inputmode="decimal" aria-label="Minimum complexity" list="complexity-options" />
+          <input id="complexity-min" type="text" value="0" inputmode="decimal" autocomplete="off" aria-label="Minimum complexity" list="complexity-options" data-min="0" data-max="5" />
           <span class="to">to</span>
-          <input id="complexity-max" type="number" min="0" max="5" step="0.1" value="5" inputmode="decimal" aria-label="Maximum complexity" list="complexity-options" />
+          <input id="complexity-max" type="text" value="5" inputmode="decimal" autocomplete="off" aria-label="Maximum complexity" list="complexity-options" data-min="0" data-max="5" />
         </div>
         <datalist id="complexity-options">
           <option value="0"></option>
@@ -276,22 +276,61 @@
     recompute();
   });
 
+  // Play time / complexity are text inputs paired with a <datalist> so the browser
+  // shows a dropdown of the spreadsheet's preset values while still allowing free
+  // typing. (type="number" + list=... is unreliable across browsers for this —
+  // some browsers filter/garble datalist options and can mangle the paired field
+  // on blur — so validation/clamping/min-max ordering is all handled here in JS,
+  // only committed once the user leaves the field, never on every keystroke.)
   function bindRange(minId, maxId, stateMinKey, stateMaxKey) {
     var minEl = document.getElementById(minId), maxEl = document.getElementById(maxId);
+    var lo = parseFloat(minEl.getAttribute('data-min'));
+    var hi = parseFloat(minEl.getAttribute('data-max'));
+
+    function clamp(v) {
+      if (isNaN(v)) return null;
+      return Math.min(hi, Math.max(lo, v));
+    }
+
+    // Live-update state while typing, but never touch the other field or
+    // reformat what's on screen — that's what was causing the min field to
+    // change value while the user was still typing/tabbing.
     minEl.addEventListener('input', function () {
       var v = parseFloat(minEl.value);
-      if (isNaN(v)) return;
-      if (v > parseFloat(maxEl.value)) maxEl.value = v;
-      state[stateMinKey] = v; state[stateMaxKey] = parseFloat(maxEl.value);
-      recompute();
+      if (!isNaN(v)) { state[stateMinKey] = v; recompute(); }
     });
     maxEl.addEventListener('input', function () {
       var v = parseFloat(maxEl.value);
-      if (isNaN(v)) return;
-      if (v < parseFloat(minEl.value)) minEl.value = v;
-      state[stateMaxKey] = v; state[stateMinKey] = parseFloat(minEl.value);
-      recompute();
+      if (!isNaN(v)) { state[stateMaxKey] = v; recompute(); }
     });
+
+    // On commit (leaving the field, or picking a value from the dropdown):
+    // clamp to range, fix ordering against the paired field, and clean up
+    // the displayed value.
+    function commitMin() {
+      var v = clamp(parseFloat(minEl.value));
+      if (v === null) v = state[stateMinKey];
+      var otherV = clamp(parseFloat(maxEl.value));
+      if (otherV === null) otherV = state[stateMaxKey];
+      if (v > otherV) otherV = v;
+      minEl.value = v; maxEl.value = otherV;
+      state[stateMinKey] = v; state[stateMaxKey] = otherV;
+      recompute();
+    }
+    function commitMax() {
+      var v = clamp(parseFloat(maxEl.value));
+      if (v === null) v = state[stateMaxKey];
+      var otherV = clamp(parseFloat(minEl.value));
+      if (otherV === null) otherV = state[stateMinKey];
+      if (v < otherV) otherV = v;
+      maxEl.value = v; minEl.value = otherV;
+      state[stateMaxKey] = v; state[stateMinKey] = otherV;
+      recompute();
+    }
+    minEl.addEventListener('change', commitMin);
+    minEl.addEventListener('blur', commitMin);
+    maxEl.addEventListener('change', commitMax);
+    maxEl.addEventListener('blur', commitMax);
   }
   bindRange('time-min', 'time-max', 'timeMin', 'timeMax');
   bindRange('complexity-min', 'complexity-max', 'complexityMin', 'complexityMax');
