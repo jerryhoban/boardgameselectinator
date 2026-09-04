@@ -55,7 +55,7 @@
   .field + .field { margin-top: 20px; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
-  select, .stepper input, .age-input-wrap input {
+  select, .stepper input, .age-input-wrap input, #bgg-username-input {
     width: 100%; border: 1px solid var(--field-border); border-radius: 10px; background: var(--field-bg);
     color: var(--field-text); font-family: 'Work Sans', sans-serif; font-size: 14px; font-weight: 500;
     padding: 10px 12px; appearance: none;
@@ -66,7 +66,7 @@
     background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
     padding-right: 34px;
   }
-  select::placeholder, .stepper input::placeholder, .age-input-wrap input::placeholder, .range-row input::placeholder {
+  select::placeholder, .stepper input::placeholder, .age-input-wrap input::placeholder, .range-row input::placeholder, #bgg-username-input::placeholder {
     color: var(--field-text); opacity: 0.5;
   }
   .stepper { display: flex; align-items: center; gap: 10px; }
@@ -126,6 +126,11 @@
 
   footer { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); line-height: 1.6; }
 
+  #bgg-username-input { width: 100%; }
+  #load-collection-btn { margin-top: 10px; }
+  #load-collection-btn:disabled { opacity: 0.6; cursor: default; }
+  #source-status.is-error { color: var(--danger-text); }
+
   @media (prefers-reduced-motion: no-preference) {
     .card, .detail-card { animation: rise 0.2s ease both; }
     @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
@@ -142,6 +147,13 @@
   <!-- SEARCH SCREEN -->
   <section id="view-search" class="screen">
     <div class="panel">
+      <div class="field">
+        <label class="field-label" for="bgg-username-input">BoardGameGeek username</label>
+        <input id="bgg-username-input" type="text" value="jerryjfunk" autocomplete="off" spellcheck="false" placeholder="BGG username" />
+        <button type="button" class="cta" id="load-collection-btn">Load collection</button>
+        <p class="range-hint" id="source-status">Showing a saved demo collection. Enter a BoardGameGeek username and press "Load collection" to pull that person's live data instead.</p>
+      </div>
+
       <div class="field">
         <label class="field-label" for="players-input">Player count</label>
         <div class="stepper">
@@ -162,9 +174,8 @@
         <label class="field-label" for="type-select">Type</label>
         <select id="type-select">
           <option>Any</option>
-          <option>Competitive</option>
           <option>Cooperative</option>
-          <option>Mixed</option>
+          <option>Competitive</option>
         </select>
       </div>
 
@@ -241,7 +252,7 @@
   </section>
 
   <footer>
-    Prototype v4 &mdash; filters modeled on the "Selectinator" tab of Jerry's spreadsheet (player count, type, play time and complexity as min/max ranges, mechanics and theme), plus a youngest-player-age check carried over from the original concept (every field here is optional). Play time and complexity use each game's average across its listed range. Mechanics/Theme is Claude's split of the spreadsheet's single Tags list using standard BGG terminology — worth a review. Games without manual tagging in the spreadsheet show as uncategorized, and games without a saved BGG image show a placeholder.
+    Prototype v5 &mdash; enter a BoardGameGeek username above and press "Load collection" to pull that person's real owned-game data (ratings, complexity, player-count recommendations, mechanics and theme) live from BoardGameGeek. If the live lookup can't complete &mdash; the username doesn't exist, the collection is private, or the server's BGG connection isn't set up &mdash; you'll see a saved demo collection instead so the tool still works. Type is simplified to Cooperative/Competitive, based on BGG's own "Cooperative Game" tag. Play time and complexity use each game's average across its listed range, and games without a saved BGG image show a placeholder.
   </footer>
 </div>
 
@@ -249,6 +260,7 @@
 <script>
 (function () {
   var GAMES = JSON.parse(document.getElementById('games-data').textContent);
+  var DEMO_GAMES = GAMES;
   document.getElementById('meta').textContent = GAMES.length + ' games in the collection';
 
   // Populate mechanics/theme dropdowns from data actually present.
@@ -260,13 +272,18 @@
       select.appendChild(opt);
     });
   }
-  var mechSet = {}, themeSet = {};
-  GAMES.forEach(function (g) {
-    (g.mech || []).forEach(function (t) { mechSet[t] = true; });
-    (g.theme || []).forEach(function (t) { themeSet[t] = true; });
-  });
-  populateSelect('mech-select', Object.keys(mechSet));
-  populateSelect('theme-select', Object.keys(themeSet));
+  function refreshMechThemeOptions() {
+    document.getElementById('mech-select').innerHTML = '<option value="Any">Any</option>';
+    document.getElementById('theme-select').innerHTML = '<option value="Any">Any</option>';
+    var mechSet = {}, themeSet = {};
+    GAMES.forEach(function (g) {
+      (g.mech || []).forEach(function (t) { mechSet[t] = true; });
+      (g.theme || []).forEach(function (t) { themeSet[t] = true; });
+    });
+    populateSelect('mech-select', Object.keys(mechSet));
+    populateSelect('theme-select', Object.keys(themeSet));
+  }
+  refreshMechThemeOptions();
 
   var state = { players: 4, youngestAge: null, type: 'Any', timeMin: 0, timeMax: 500, complexityMin: 0, complexityMax: 5, mech: 'Any', theme: 'Any' };
   var currentResults = [];
@@ -547,6 +564,56 @@
   viewResultsBtn.addEventListener('click', function () { renderResults(); goTo('results'); });
   document.getElementById('back-to-search').addEventListener('click', function () { goTo('search'); });
   document.getElementById('back-to-results').addEventListener('click', function () { renderResults(); goTo('results'); });
+
+  var usernameInput = document.getElementById('bgg-username-input');
+  var loadBtn = document.getElementById('load-collection-btn');
+  var sourceStatus = document.getElementById('source-status');
+
+  function setSourceStatus(msg, isError) {
+    sourceStatus.textContent = msg;
+    sourceStatus.classList.toggle('is-error', !!isError);
+  }
+
+  function loadCollection() {
+    var username = (usernameInput.value || '').trim();
+    if (!username) { setSourceStatus('Enter a BoardGameGeek username.', true); return; }
+    loadBtn.disabled = true;
+    loadBtn.textContent = 'Loading…';
+    setSourceStatus('Fetching ' + username + '’s collection from BoardGameGeek…', false);
+
+    fetch('/api/collection?username=' + encodeURIComponent(username))
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (result) {
+        if (!result.ok || result.data.error) {
+          throw new Error((result.data && result.data.error) || 'Could not load that collection.');
+        }
+        if (!result.data.games || !result.data.games.length) {
+          GAMES = DEMO_GAMES;
+          setSourceStatus((result.data.note || ('No owned games found for "' + username + '".')) + ' Showing the saved demo collection instead.', true);
+        } else {
+          GAMES = result.data.games;
+          setSourceStatus('Showing ' + GAMES.length + ' games from ' + username + '’s BoardGameGeek collection.', false);
+        }
+        refreshMechThemeOptions();
+        recompute();
+      })
+      .catch(function (err) {
+        GAMES = DEMO_GAMES;
+        setSourceStatus('Couldn’t load live BoardGameGeek data (' + err.message + '). Showing the saved demo collection instead.', true);
+        refreshMechThemeOptions();
+        recompute();
+      })
+      .finally(function () {
+        loadBtn.disabled = false;
+        loadBtn.textContent = 'Load collection';
+      });
+  }
+  loadBtn.addEventListener('click', loadCollection);
+  usernameInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); loadCollection(); }
+  });
 
   recompute();
 })();

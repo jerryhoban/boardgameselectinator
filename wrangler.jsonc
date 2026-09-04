@@ -1,0 +1,19 @@
+{
+  // This tells Cloudflare how to build and run the project: run worker.js as
+  // the server-side code, and serve every other file in this same folder
+  // (index.html, etc.) as static assets. Cloudflare reads this automatically
+  // on every deploy — nothing here needs editing by hand.
+  "name": "boardgameselectinator",
+  "main": "worker.js",
+  "compatibility_date": "2026-01-01",
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS"
+  }
+
+  // To turn off the automatic *.workers.dev address later (once a custom
+  // domain is attached instead), add this line inside these braces:
+  //   "workers_dev": false
+  // Leaving it out (as here) keeps the workers.dev address turned on, which
+  // is what makes the site reachable right now.
+}

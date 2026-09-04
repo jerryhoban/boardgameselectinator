@@ -1,65 +1,66 @@
 # Board Game Selectinator — deploying the live version
 
-This folder is a complete, ready-to-upload web app. It has two parts:
+This folder is a complete, ready-to-deploy web app, built for Cloudflare Workers (with static assets). It has three parts:
 
 - `index.html` — the app itself (what people see and use).
-- `functions/api/collection.js` — a small piece of server code that talks to BoardGameGeek on the app's behalf, using your API token. It runs on Cloudflare's servers, never in anyone's browser, so the token is never visible to users.
+- `worker.js` — a small piece of server code that talks to BoardGameGeek on the app's behalf, using your API token, and hands every other request off to `index.html`. It runs on Cloudflare's servers, never in anyone's browser, so the token is never visible to users.
+- `wrangler.jsonc` — a small config file that tells Cloudflare how the other two fit together. You won't need to edit it.
 
-You don't need to know how to code or use the command line. Everything below happens by clicking around in a web browser.
+You already have a Cloudflare project connected to a GitHub repo — this replaces an earlier version of this folder that assumed a different (older) Cloudflare product called "Pages," which turned out not to be what got created when you connected your repo. The fix below matches what Cloudflare actually built for you.
 
-## What you'll end up with
+## What changed, in plain terms
 
-A web address (something like `board-game-selectinator.pages.dev`) that you can open on your phone or computer, or share with your game group. Anyone who opens it can type in their own BoardGameGeek username and get recommendations from their real, live collection — or just use the built-in demo collection if they don't want to bother.
+When you connected your repo, Cloudflare created a **Worker** for it (that's what the `workers.dev` address and the `workers_dev` warning you saw are about), not the older "Pages" product. Workers and Pages both host a site fine, but they wire up server-side code differently: Pages looks for a `functions` folder and auto-routes it, while a Worker needs one script that explicitly handles every kind of request itself. `worker.js` is written to do exactly that — it checks whether a request is for `/api/collection` (and answers it directly) or for anything else (and hands it to `index.html`/the static files).
 
-## Step 1 — Create a free Cloudflare account
+If you already pushed an earlier version of `index.html` on its own, that's also why the live site was showing an older screen without the username field — this package's `index.html` is the current one with that field included.
 
-1. Go to **dash.cloudflare.com/sign-up** and create an account (email + password is enough — no credit card required for what we're doing).
-2. Verify your email if it asks you to.
+## Getting this onto your existing project
 
-## Step 2 — Create a Pages project
+1. In your GitHub repo, replace whatever is there with the contents of this folder — specifically, make sure `index.html`, `worker.js`, and `wrangler.jsonc` all end up sitting next to each other at the same folder level (the repo root, unless you've deliberately put this project in a subfolder, in which case all three go in that same subfolder together). Remove any leftover `functions` folder from an earlier attempt — it's not used by this setup and won't cause harm, but there's no reason to keep it.
+2. Commit and push. Since your Cloudflare project is already connected to this repo, it should pick up the push and redeploy automatically — check the project's **Deployments** tab in the Cloudflare dashboard to watch it happen.
+3. If it doesn't redeploy on its own, open the project in Cloudflare, go to **Deployments**, and look for a **Retry deployment** / **Create deployment** button to trigger one manually.
 
-1. Once logged in, look in the left sidebar for **Workers & Pages** and click it.
-2. Click **Create** (or **Create application**), then choose the **Pages** tab.
-3. Choose **Upload assets** (this may also be labeled **Direct Upload**) — this is the option that lets you skip GitHub entirely.
-4. Give the project a name, for example `board-game-selectinator`. This name becomes part of your web address.
+## Setting your BGG API token (the important security step)
 
-## Step 3 — Upload this folder
-
-1. You should now see a screen asking you to upload files.
-2. Upload the **entire `cf-deploy` folder** (or the zip file you were given — if it's a zip, upload the zip and Cloudflare will unpack it). Make sure the `functions` folder and `index.html` both end up at the top level of what gets uploaded — not nested inside an extra folder.
-3. Click **Deploy site** (or similar). Cloudflare will publish it and give you a URL like `https://board-game-selectinator.pages.dev`.
-
-Don't worry if the app doesn't work perfectly the moment it's deployed — you still need to add your API token in the next step.
-
-## Step 4 — Add your BGG API token (the important security step)
-
-Your BoardGameGeek API token is a secret, like a password. It should never be typed into this chat, pasted into the `index.html` file, or shared anywhere public. Cloudflare gives you a safe, private place to store it.
+Your BoardGameGeek API token is a secret, like a password. It should never be typed into this chat, pasted into any file, or committed into the GitHub repo (even a private one). Cloudflare gives you a safe, private place to store it instead.
 
 1. Get your token: go to **boardgamegeek.com/applications**, find your approved application, and click the **Tokens** button next to it to generate/view your token. Copy it.
-2. Back in Cloudflare, open your new Pages project and go to its **Settings** tab.
-3. Find **Environment variables** (sometimes under a "Variables and Secrets" section).
-4. Add a new variable:
+2. In the Cloudflare dashboard, open your Worker project and go to **Settings**.
+3. Find **Variables and Secrets** (this is the Worker equivalent of what was called "Environment variables" for Pages).
+4. Add a new one:
+   - **Type:** Secret (not plain text)
    - **Name:** `BGG_TOKEN`
    - **Value:** paste your token
-   - Mark it as **Encrypted** / **Secret** if given the option.
-5. Save. Cloudflare will usually tell you that you need to redeploy for the change to take effect — if there's a **Retry deployment** or **Redeploy** button, click it. (If not, just re-uploading the same folder again also works.)
+5. Save, then redeploy if Cloudflare doesn't do it automatically (same **Deployments** tab as above).
 
-## Step 5 — Try it
+## Trying it
 
-1. Open your `*.pages.dev` URL.
-2. Type a BoardGameGeek username into the **BoardGameGeek username** field (it starts prefilled with `jerryjfunk`) and click **Load collection**.
-3. You should see a message like "Showing 73 games from jerryjfunk's BoardGameGeek collection" and the filters below will now reflect that person's real collection.
+1. Open your Worker's URL — the one ending in `.workers.dev`, e.g. `https://boardgameselectinator.jerryhoban.workers.dev/`.
+2. You should see the "BoardGameGeek username" field (prefilled with `jerryjfunk`) and a "Load collection" button — if you only see the older filter screen without that field, the new `index.html` hasn't deployed yet (recheck step 2 above).
+3. Click **Load collection**. You should see a message like "Showing 73 games from jerryjfunk's BoardGameGeek collection."
 
-If something goes wrong, the app will tell you in plain language and quietly fall back to the built-in demo collection so it's never just broken — common messages you might see:
+If something goes wrong, the app will tell you in plain language and quietly fall back to a built-in demo collection so it's never just broken — common messages you might see:
 
 - **"BoardGameGeek has no user named ___"** — the username was typed wrong.
-- **"BGG rejected the request — the API token may be missing or invalid"** — double check Step 4: the variable must be named exactly `BGG_TOKEN`, and you need to redeploy after adding it.
+- **"BGG rejected the request — the API token may be missing or invalid"** — double-check the token step above: the variable must be named exactly `BGG_TOKEN` and marked as a Secret, and the project needs to have redeployed after you added it.
 - **"BGG is still preparing that collection"** — BGG sometimes needs a few seconds to compile a collection the first time it's requested for a given username; just try again.
 - **"No owned, non-expansion games found"** — that user's collection is empty, private, or has no games marked "owned."
+- A blank page, or a 404 for the whole site — usually means `wrangler.jsonc` didn't end up next to `index.html` and `worker.js` in the repo; double-check step 1.
+
+## About that `.workers.dev` address, and shortening it
+
+The address Cloudflare gave you follows the pattern `<project-name>.<your-account-name>.workers.dev` — that's why it reads `boardgameselectinator.jerryhoban.workers.dev`. The warning about `workers_dev` you saw just means Cloudflare will keep that address turned on by default since `wrangler.jsonc` doesn't say otherwise (this package's copy leaves it on, since right now it's the only way to reach the site).
+
+Turning `workers_dev` off would **remove** that address rather than shorten it — without your own domain attached, that address is the site's only public entrance, so turning it off would make the site unreachable. If you'd like a shorter address, there are two real options:
+
+- **Rename the project** (in `wrangler.jsonc`, change `"name": "boardgameselectinator"` to something shorter, e.g. `"selectinator"`) — this only shortens the first part of the address, before `.jerryhoban.workers.dev`.
+- **Attach a custom domain you own** — under the Worker's **Settings > Domains & Routes**, add a domain (something you've bought, even a short/cheap one). This fully replaces the `.workers.dev` address with your own, and can be as short as the domain itself.
+
+There's no way to get a shorter address than `.workers.dev` gives you without owning a domain — Cloudflare doesn't offer a shorter free alternative.
 
 ## Making changes later
 
-If you (or I) ever want to tweak the app, the easiest path is: edit the files, then upload the folder again to the same Cloudflare Pages project (Cloudflare keeps a history of every deployment, so nothing is lost, and old versions can be restored from the project's **Deployments** tab if needed). You do not need to re-enter the `BGG_TOKEN` — environment variables stay attached to the project once set.
+Edit the files in the repo (or ask me to, and I'll hand you updated files to commit) and push — since the project is Git-connected, Cloudflare redeploys automatically. `BGG_TOKEN` stays set across deploys; you never need to re-enter it.
 
 ## A note on privacy
 
