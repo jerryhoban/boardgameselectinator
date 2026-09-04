@@ -51,10 +51,13 @@ async function handleCollection(url, env) {
   if (!username) {
     return jsonResponse({ error: 'Enter a BoardGameGeek username.' }, 400);
   }
-  const token = env.BGG_TOKEN;
+  const token = await resolveToken(env);
   if (!token) {
     return jsonResponse(
-      { error: 'Server is missing its BGG_TOKEN secret. Set it in the Worker’s Settings > Variables and Secrets.' },
+      {
+        error:
+          'Server is missing its BGG_TOKEN secret. Add it as a binding named BGG_TOKEN under this Worker’s Bindings tab.',
+      },
       500
     );
   }
@@ -73,6 +76,19 @@ async function handleCollection(url, env) {
   } catch (err) {
     return jsonResponse({ error: err && err.message ? err.message : String(err) }, 502);
   }
+}
+
+// Cloudflare has more than one way to bind a secret to a Worker these days:
+// a classic secret shows up on `env` as a plain string, while a Secrets
+// Store binding shows up as an object with an async .get() method instead.
+// Support both so this keeps working regardless of which one was used when
+// the binding was added in the dashboard.
+async function resolveToken(env) {
+  const raw = env.BGG_TOKEN;
+  if (!raw) return null;
+  if (typeof raw === 'string') return raw;
+  if (typeof raw.get === 'function') return await raw.get();
+  return null;
 }
 
 function jsonResponse(data, status = 200) {
