@@ -9,7 +9,21 @@
   "assets": {
     "directory": "./",
     "binding": "ASSETS"
-  }
+  },
+
+  // This makes the BGG_TOKEN binding (added by hand in the dashboard's
+  // Bindings tab) permanent, so it survives future deploys from GitHub
+  // instead of needing to be re-added each time. store_id and secret_name
+  // just identify where the token lives in Cloudflare's Secrets Store —
+  // neither one is the token's actual value, so it's safe for these to sit
+  // in this file / the GitHub repo.
+  "secrets_store_secrets": [
+    {
+      "binding": "BGG_TOKEN",
+      "store_id": "2793c03fac7d4d1da4c4399bebb88d7d",
+      "secret_name": "bgg-token"
+    }
+  ]
 
   // To turn off the automatic *.workers.dev address later (once a custom
   // domain is attached instead), add this line inside these braces:

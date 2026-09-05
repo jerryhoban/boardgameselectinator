@@ -24,14 +24,21 @@ If you already pushed an earlier version of `index.html` on its own, that's also
 
 Your BoardGameGeek API token is a secret, like a password. It should never be typed into this chat, pasted into any file, or committed into the GitHub repo (even a private one). Cloudflare gives you a safe, private place to store it instead.
 
+There's one thing worth knowing up front: Cloudflare's dashboard has a "Build" settings page (with things like an API token for builds, Deploy Hooks, and Build cache) that also happens to have a "Variables and secrets" box on it — but that one only feeds Cloudflare's own build process, not your running app. The one that actually matters is on the Worker's **Bindings** tab.
+
 1. Get your token: go to **boardgamegeek.com/applications**, find your approved application, and click the **Tokens** button next to it to generate/view your token. Copy it.
-2. In the Cloudflare dashboard, open your Worker project and go to **Settings**.
-3. Find **Variables and Secrets** (this is the Worker equivalent of what was called "Environment variables" for Pages).
-4. Add a new one:
-   - **Type:** Secret (not plain text)
-   - **Name:** `BGG_TOKEN`
-   - **Value:** paste your token
-5. Save, then redeploy if Cloudflare doesn't do it automatically (same **Deployments** tab as above).
+2. In the Cloudflare dashboard, open your Worker project (Workers & Pages → your project). Along the top you'll see tabs like Overview, Metrics, Deployments, **Bindings**, Observability, Domains, Access, Settings — click **Bindings**.
+3. Click **Add** (or "Add a binding"). Depending on what Cloudflare shows you:
+   - If you see a simple "Secret" or "Environment Variable" option, pick that, name it exactly `BGG_TOKEN`, and paste your token as the value.
+   - If the closest option is **Secrets Store** (Cloudflare's newer, centralized way of managing secrets), pick that instead — it'll ask you to create/pick a store, add a new secret in it with your token as the value, and then set the **binding name** to `BGG_TOKEN`. That binding name is what matters for the app; the secret's own name inside the store can be anything.
+4. Save/confirm. You should see `BGG_TOKEN` show up alongside `Assets` in the Bindings list for this Worker.
+5. If it doesn't take effect within a minute, check the **Deployments** tab — adding a binding usually creates a new active deployment automatically, but if not, trigger one manually.
+
+(`worker.js` in this package is written to handle either style of secret automatically, so you don't need to tell it which one you used.)
+
+## Keeping BGG_TOKEN safe across future deploys
+
+`wrangler.jsonc` now includes a `secrets_store_secrets` block that points at the same Secrets Store secret you set up in the Bindings tab. This is a small but important safety net: Cloudflare treats `wrangler.jsonc` as the source of truth on every deploy, and a future git-triggered deploy that doesn't mention a dashboard-added binding can silently drop it. With this block in place, the `BGG_TOKEN` binding is declared right in the file, so it survives every future push instead of needing to be re-added by hand. The block only references where the secret lives (a store ID and a secret name) — never the token's actual value — so it's safe to have in the repo.
 
 ## Trying it
 
