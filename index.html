@@ -104,31 +104,19 @@
     -webkit-backdrop-filter: blur(8px);
   }
   .app-title {
-    font-family: var(--font-header);
-    font-weight: 600;
-    font-size: 27px;
-    letter-spacing: 0.01em;
     margin: 0;
-    text-align: center;
     flex: 1;
-    color: var(--ink);
-    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
   }
-  /* Title treatment: greenish gradient on most of the wordmark, with
-     "Play" broken into individually-colored letters (reusing colors
-     already in the app's palette) for a more playful, "gamey" feel. */
-  .title-grad {
-    background: linear-gradient(180deg, #a9e8c4 0%, #4f8f6b 55%, #2f5b43 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    -webkit-text-fill-color: transparent;
+  /* Round 7: replaced the CSS-gradient/per-letter text treatment with
+     Jerry's own logo artwork (transparent PNG). */
+  .app-title-logo {
+    max-width: 100%;
+    height: 40px;
+    width: auto;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
   }
-  .play-word { display: inline-block; }
-  .play-word .pl-1 { color: var(--coop-blue); }
-  .play-word .pl-2 { color: var(--time-medium); }
-  .play-word .pl-3 { color: var(--bgg-orange); }
-  .play-word .pl-4 { color: var(--type-c2); }
   .corner-icon {
     width: 40px; height: 40px; flex-shrink: 0;
     border-radius: 50%;
@@ -147,15 +135,11 @@
   /* ---- Filter list (home screen) ---- */
   .filter-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 
-  /* "Light shining down on the questions": the filter rows fade from the
-     normal panel opacity at the top and bottom of the list to more
-     see-through in the middle, like a soft spotlight over the list. */
-  .filter-list .filter-row:nth-child(1) { background: rgba(22, 18, 14, 0.80); }
-  .filter-list .filter-row:nth-child(2) { background: rgba(22, 18, 14, 0.62); }
-  .filter-list .filter-row:nth-child(3) { background: rgba(22, 18, 14, 0.46); }
-  .filter-list .filter-row:nth-child(4) { background: rgba(22, 18, 14, 0.46); }
-  .filter-list .filter-row:nth-child(5) { background: rgba(22, 18, 14, 0.62); }
-  .filter-list .filter-row:nth-child(6) { background: rgba(22, 18, 14, 0.80); }
+  /* All filter rows share one uniform, more opaque background (the
+     "spotlight" effect that made the middle rows more see-through than the
+     Tags/Username rows was retired per feedback — the Tags row's level is
+     now the level for every row). */
+  .filter-list .filter-row { background: rgba(22, 18, 14, 0.80); }
 
   .filter-row {
     display: flex; align-items: center; gap: 8px;
@@ -408,13 +392,16 @@
   }
   .results-count { font-family: var(--font-body); font-size: 12.5px; color: var(--ink-faint); margin: -6px 0 12px; }
 
+  /* Round 7: the separate "featured card" below the list is gone. The list
+     is now a single-expanded accordion — each row is either a compact
+     summary row or (for whichever game is currently selected) an expanded
+     row showing the full detail inline, in place. */
   .top10-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
   .top10-row {
     display: flex; align-items: center; gap: 10px;
     background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
     padding: 6px 10px; cursor: pointer;
   }
-  .top10-row.is-selected { border-color: var(--accent); background: rgba(79,143,107,0.18); }
   .top10-thumb { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; background: var(--chip-bg); flex-shrink: 0; }
   .top10-thumb.placeholder { display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--ink-faint); font-family: var(--font-body); }
   .top10-rank { width: 18px; text-align: center; color: var(--ink-faint); font-size: 15px; flex-shrink: 0; }
@@ -423,9 +410,10 @@
 
   .empty-note { font-family: var(--font-body); color: var(--ink-faint); font-size: 14px; padding: 10px 2px 18px; }
 
-  .featured-card {
-    background: var(--panel-strong); border: 1px solid var(--border); border-radius: 18px;
-    padding: 14px; box-shadow: var(--shadow); margin-bottom: 14px;
+  .top10-row.is-expanded {
+    flex-direction: column; align-items: stretch; cursor: default;
+    background: var(--panel-strong); border-color: var(--accent);
+    padding: 14px; box-shadow: var(--shadow);
   }
   .featured-top { display: flex; gap: 12px; }
   .featured-thumb { width: 78px; height: 78px; border-radius: 12px; object-fit: cover; background: var(--chip-bg); flex-shrink: 0; }
@@ -440,6 +428,24 @@
   .featured-stats div { flex: 1; }
   .featured-stats .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
   .featured-stats .v { font-size: 15px; font-weight: 600; margin-top: 2px; }
+
+  /* Player-count preference breakdown (Best/Recommended/Not Recommended per
+     count), from BGG's own community poll — was already fetched by the
+     Worker and used for filtering, now finally shown to the user. */
+  .featured-playercounts { margin-top: 12px; font-family: var(--font-body); }
+  .pc-row { display: flex; gap: 4px; margin-top: 6px; }
+  .pc-pill {
+    flex: 1; text-align: center; padding: 5px 0; border-radius: 8px;
+    font-size: 12px; font-weight: 700; background: var(--chip-bg); color: var(--ink-faint);
+  }
+  .pc-pill.pc-best { background: rgba(34,197,94,0.28); color: #86efac; }
+  .pc-pill.pc-rec { background: rgba(234,179,8,0.22); color: #fde68a; }
+  .pc-legend { display: flex; gap: 12px; margin-top: 8px; font-size: 11px; color: var(--ink-faint); flex-wrap: wrap; }
+  .pc-legend-item { display: flex; align-items: center; gap: 5px; }
+  .pc-legend-swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .pc-legend-swatch.pc-best { background: #86efac; }
+  .pc-legend-swatch.pc-rec { background: #fde68a; }
+  .pc-legend-swatch.pc-none { background: var(--ink-faint); opacity: 0.5; }
 
   .featured-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
   .featured-tag {
@@ -460,8 +466,10 @@
     color: var(--ink); border-radius: 14px; padding: 13px; font-family: var(--font-results);
     font-size: 17px; letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer;
     margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
   }
   .back-btn:hover { border-color: var(--ink-dim); }
+  .back-btn-icon { width: 18px; height: 18px; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -475,7 +483,7 @@
     <button type="button" class="corner-icon" id="profile-btn" aria-label="Profile">
       <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" fill="currentColor"/></svg>
     </button>
-    <h1 class="app-title"><span class="title-grad">What Should We </span><span class="play-word"><span class="pl-1">P</span><span class="pl-2">l</span><span class="pl-3">a</span><span class="pl-4">y</span></span><span class="title-grad">?</span></h1>
+    <h1 class="app-title"><img class="app-title-logo" src="assets/logo-header.png" alt="What Should We Play?"></h1>
     <button type="button" class="corner-icon" id="settings-btn" aria-label="Settings">
       <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 .06-1 7.5 7.5 0 0 0-.06-1l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.4.96a7.4 7.4 0 0 0-1.73-1l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54a7.4 7.4 0 0 0-1.73 1l-2.4-.96a.5.5 0 0 0-.6.22L2.45 8.78a.5.5 0 0 0 .12.64L4.6 11a7.5 7.5 0 0 0 0 2l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.42.32.66.22l2.4-.96c.53.42 1.11.76 1.73 1l.36 2.54c.05.25.26.42.5.42h3.84c.24 0 .45-.17.5-.42l.36-2.54a7.4 7.4 0 0 0 1.73-1l2.4.96c.24.1.52.02.66-.22l1.92-3.32a.5.5 0 0 0-.12-.64L19.4 13zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/></svg>
     </button>
@@ -581,11 +589,13 @@
     <section id="view-results" class="screen" hidden>
       <div class="results-layout">
         <div class="results-main">
-          <button type="button" class="back-btn" id="back-to-search">Back to Search</button>
+          <button type="button" class="back-btn" id="back-to-search">
+            <svg class="back-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+            Back to Search
+          </button>
           <h2 class="results-heading">Results</h2>
           <p class="results-count" id="results-count"></p>
           <div class="top10-list" id="top10-list"></div>
-          <div class="featured-card" id="featured-card"></div>
         </div>
       </div>
     </section>
@@ -1056,11 +1066,20 @@
   }
 
   function loadCollectionFor(username) {
-    if (!username) return;
+    if (!username || usernameLoading) return;
     usernameLoading = true;
     renderUsernameRow();
     document.getElementById('label-username').textContent = 'Loading…';
-    setUsernameStatus('');
+    // Keep the picker open and show progress in it — it used to close
+    // immediately on submit, which meant a success or error message written
+    // to this same status note was never actually seen (the note lives
+    // inside the now-hidden picker, and reopening the picker to check wiped
+    // it again). Now the picker only closes once we actually know the
+    // result, so the message is always visible when it matters most: on
+    // failure.
+    setUsernameStatus('Loading ' + username + '’s collection…');
+    usernamePickerInput.disabled = true;
+    document.getElementById('username-load-btn').disabled = true;
     fetch('/api/collection?username=' + encodeURIComponent(username))
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
       .then(function (result) {
@@ -1069,20 +1088,22 @@
         }
         if (result.data.games && result.data.games.length) {
           GAMES = result.data.games;
+          state.username = username;
           setUsernameStatus('Loaded ' + result.data.games.length + ' games from ' + username + '’s collection.');
+          closePicker('picker-username');
         } else {
           GAMES = [];
           setUsernameStatus((result.data.note || 'No owned games found.') + ' for ' + username + '.', true);
         }
-        state.username = username;
       })
       .catch(function (err) {
         GAMES = [];
-        state.username = username;
         setUsernameStatus('Couldn’t load live BoardGameGeek data (' + err.message + ').', true);
       })
       .finally(function () {
         usernameLoading = false;
+        usernamePickerInput.disabled = false;
+        document.getElementById('username-load-btn').disabled = false;
         renderAllRows();
       });
   }
@@ -1101,7 +1122,6 @@
       pill.addEventListener('click', function () {
         usernamePickerInput.value = name;
         loadCollectionFor(name);
-        closePicker('picker-username');
       });
       wrap.appendChild(pill);
     });
@@ -1111,12 +1131,12 @@
     if (e.key === 'Enter') {
       e.preventDefault();
       var v = usernamePickerInput.value.trim();
-      if (v) { loadCollectionFor(v); closePicker('picker-username'); }
+      if (v) loadCollectionFor(v);
     }
   });
   document.getElementById('username-load-btn').addEventListener('click', function () {
     var v = usernamePickerInput.value.trim();
-    if (v) { loadCollectionFor(v); closePicker('picker-username'); }
+    if (v) loadCollectionFor(v);
   });
   document.getElementById('manage-fav-link').addEventListener('click', function () {
     closePicker('picker-username');
@@ -1141,7 +1161,14 @@
       span.textContent = name;
       var use = document.createElement('button');
       use.type = 'button'; use.className = 'picker-btn secondary'; use.textContent = 'Use';
-      use.addEventListener('click', function () { loadCollectionFor(name); closePicker('picker-settings'); });
+      use.addEventListener('click', function () {
+        closePicker('picker-settings');
+        // Route through the username picker (rather than loading silently)
+        // so its status note is visible if this lookup fails.
+        openPicker('picker-username');
+        usernamePickerInput.value = name;
+        loadCollectionFor(name);
+      });
       var del = document.createElement('button');
       del.type = 'button'; del.className = 'picker-btn danger'; del.textContent = 'Remove';
       del.addEventListener('click', function () {
@@ -1226,6 +1253,11 @@
     return 'var(--ink-faint)';
   }
 
+  // ---- Results list: single-expanded accordion ----
+  // Round 7 replaced the old pattern (a compact list plus a separate
+  // "featured card" below it) with an accordion: the top-rated game starts
+  // expanded in place, clicking any other row expands it and collapses
+  // whichever was open before. Only one row is ever expanded at a time.
   function renderResults() {
     var list = document.getElementById('top10-list');
     var countEl = document.getElementById('results-count');
@@ -1237,50 +1269,57 @@
       empty.className = 'empty-note';
       empty.textContent = 'Nothing fits that combination — try loosening a filter.';
       list.appendChild(empty);
-      document.getElementById('featured-card').innerHTML = '';
       return;
     }
 
     var top10 = currentResults.slice(0, 10);
     top10.forEach(function (g, i) {
+      var isExpanded = selectedGame === g;
       var row = document.createElement('div');
-      row.className = 'top10-row' + (selectedGame === g ? ' is-selected' : '');
-      row.addEventListener('click', function () { selectedGame = g; renderFeatured(); renderResults(); });
+      row.className = 'top10-row' + (isExpanded ? ' is-expanded' : '');
+      row.addEventListener('click', function () {
+        if (selectedGame === g) return;
+        selectedGame = g;
+        renderResults();
+      });
 
-      var rank = document.createElement('span');
-      rank.className = 'top10-rank';
-      rank.textContent = String(i + 1);
-
-      if (g.image) {
-        var thumb = document.createElement('img');
-        thumb.className = 'top10-thumb'; thumb.src = g.image; thumb.alt = ''; thumb.loading = 'lazy';
-        row.appendChild(rank); row.appendChild(thumb);
+      if (isExpanded) {
+        fillExpandedRow(row, g);
       } else {
-        var ph = document.createElement('span');
-        ph.className = 'top10-thumb placeholder';
-        ph.textContent = g.n.charAt(0);
-        row.appendChild(rank); row.appendChild(ph);
+        fillCompactRow(row, g, i);
       }
-
-      var name = document.createElement('span');
-      name.className = 'top10-name';
-      name.textContent = g.n;
-      var rating = document.createElement('span');
-      rating.className = 'top10-rating';
-      rating.style.color = ratingColor(g.r);
-      rating.textContent = (g.r || 0).toFixed(1);
-
-      row.appendChild(name); row.appendChild(rating);
       list.appendChild(row);
     });
   }
 
-  function renderFeatured() {
-    var card = document.getElementById('featured-card');
-    card.innerHTML = '';
-    if (!selectedGame) return;
-    var g = selectedGame;
+  function fillCompactRow(row, g, i) {
+    var rank = document.createElement('span');
+    rank.className = 'top10-rank';
+    rank.textContent = String(i + 1);
 
+    if (g.image) {
+      var thumb = document.createElement('img');
+      thumb.className = 'top10-thumb'; thumb.src = g.image; thumb.alt = ''; thumb.loading = 'lazy';
+      row.appendChild(rank); row.appendChild(thumb);
+    } else {
+      var ph = document.createElement('span');
+      ph.className = 'top10-thumb placeholder';
+      ph.textContent = g.n.charAt(0);
+      row.appendChild(rank); row.appendChild(ph);
+    }
+
+    var name = document.createElement('span');
+    name.className = 'top10-name';
+    name.textContent = g.n;
+    var rating = document.createElement('span');
+    rating.className = 'top10-rating';
+    rating.style.color = ratingColor(g.r);
+    rating.textContent = (g.r || 0).toFixed(1);
+
+    row.appendChild(name); row.appendChild(rating);
+  }
+
+  function fillExpandedRow(row, g) {
     var top = document.createElement('div');
     top.className = 'featured-top';
 
@@ -1308,7 +1347,7 @@
     rating.textContent = 'BGG rating ' + (g.r || 0).toFixed(1) + ' / 10';
     body.appendChild(name); body.appendChild(rating);
     top.appendChild(body);
-    card.appendChild(top);
+    row.appendChild(top);
 
     var stats = document.createElement('div');
     stats.className = 'featured-stats';
@@ -1316,7 +1355,9 @@
       '<div><div class="k">Length</div><div class="v">' + (g.pavg != null ? g.pavg + ' min' : '—') + '</div></div>' +
       '<div><div class="k">Complexity</div><div class="v">' + (g.w ? g.w.toFixed(2) : '—') + '</div></div>' +
       '<div><div class="k">Players</div><div class="v">' + (g.pmin != null ? g.pmin + '–' + g.pmax : '—') + '</div></div>';
-    card.appendChild(stats);
+    row.appendChild(stats);
+
+    row.appendChild(buildPlayerCountBreakdown(g));
 
     var tags = document.createElement('div');
     tags.className = 'featured-tags';
@@ -1330,12 +1371,52 @@
       tag.textContent = t;
       tags.appendChild(tag);
     });
-    card.appendChild(tags);
+    row.appendChild(tags);
 
     var bggLink = document.createElement('a');
     bggLink.className = 'featured-link'; bggLink.href = g.link; bggLink.target = '_blank'; bggLink.rel = 'noopener';
     bggLink.textContent = 'View on BoardGameGeek →';
-    card.appendChild(bggLink);
+    row.appendChild(bggLink);
+  }
+
+  // Best/Recommended/Not Recommended per player count, from BGG's own
+  // community poll (game.cat — a 7-slot array for player counts 1..6 and
+  // "7+", already parsed by the Worker; this was previously only used
+  // internally for the Player Count filter and never actually shown).
+  function buildPlayerCountBreakdown(g) {
+    var wrap = document.createElement('div');
+    wrap.className = 'featured-playercounts';
+
+    var heading = document.createElement('div');
+    heading.className = 'k';
+    heading.textContent = 'Player Count';
+    wrap.appendChild(heading);
+
+    var pcRow = document.createElement('div');
+    pcRow.className = 'pc-row';
+    var cat = g.cat || [0, 0, 0, 0, 0, 0, 0];
+    var labels = ['1', '2', '3', '4', '5', '6', '7+'];
+    var levelClass = ['', 'pc-rec', 'pc-best'];
+    var levelWord = ['Not recommended', 'Recommended', 'Best'];
+    labels.forEach(function (lab, idx) {
+      var level = cat[idx] || 0;
+      var pill = document.createElement('span');
+      pill.className = 'pc-pill' + (levelClass[level] ? ' ' + levelClass[level] : '');
+      pill.textContent = lab;
+      pill.title = levelWord[level] + ' at ' + lab + ' player' + (lab === '1' ? '' : 's');
+      pcRow.appendChild(pill);
+    });
+    wrap.appendChild(pcRow);
+
+    var legend = document.createElement('div');
+    legend.className = 'pc-legend';
+    legend.innerHTML =
+      '<span class="pc-legend-item"><span class="pc-legend-swatch pc-best"></span>Best</span>' +
+      '<span class="pc-legend-item"><span class="pc-legend-swatch pc-rec"></span>Recommended</span>' +
+      '<span class="pc-legend-item"><span class="pc-legend-swatch pc-none"></span>Not recommended</span>';
+    wrap.appendChild(legend);
+
+    return wrap;
   }
 
   function goTo(name) {
@@ -1347,7 +1428,6 @@
   document.getElementById('view-results-btn').addEventListener('click', function () {
     selectedGame = currentResults[0] || null;
     renderResults();
-    renderFeatured();
     goTo('results');
   });
   document.getElementById('back-to-search').addEventListener('click', function () { goTo('search'); });
