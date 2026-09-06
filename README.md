@@ -65,6 +65,24 @@ Turning `workers_dev` off would **remove** that address rather than shorten it �
 
 There's no way to get a shorter address than `.workers.dev` gives you without owning a domain — Cloudflare doesn't offer a shorter free alternative.
 
+## Getting it onto your phone (no App Store needed)
+
+This is now a proper installable web app (a "PWA"), so you can add it to your home screen with your own icon and it'll open full-screen, without a browser address bar — no App Store or Play Store required.
+
+**On iPhone (Safari):**
+1. Open the site's `.workers.dev` address in Safari (has to be Safari, not Chrome — iOS only allows Safari to install web apps).
+2. Tap the Share icon (square with an arrow) in the toolbar.
+3. Tap **Add to Home Screen**, then **Add**.
+4. A green-die icon appears on your home screen and opens the app full-screen.
+
+**On Android (Chrome):**
+1. Open the site's `.workers.dev` address in Chrome.
+2. Tap the **⋮** menu in the top right.
+3. Tap **Add to Home screen** (or **Install app** if Chrome offers it directly), then confirm.
+4. Same result — a home-screen icon that opens full-screen like an app.
+
+This works today because the deploy now includes a web app manifest (`manifest.json`) with your logo's die as the app icon, and a small service worker (`sw.js`) that also lets the app shell load even with a spotty connection — though loading your actual BGG collection still needs a live connection, since that always comes fresh from BoardGameGeek. Once you redeploy after adding these files, anyone can install it this way straight from the browser.
+
 ## Making changes later
 
 Edit the files in the repo (or ask me to, and I'll hand you updated files to commit) and push — since the project is Git-connected, Cloudflare redeploys automatically. `BGG_TOKEN` stays set across deploys; you never need to re-enter it.
