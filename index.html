@@ -63,10 +63,35 @@
     --danger: #f87171;
 
     --shadow: 0 8px 30px -10px rgba(0,0,0,0.6);
+
+    /* Round 11: Settings > Text size. Scales the whole app (not just font
+       sizes) via `zoom`, since most sizes in this file are hard-coded px
+       rather than rem — scaling everything proportionally keeps spacing
+       and icons in sync with the text instead of causing overlap/overflow. */
+    --ui-scale: 1;
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; padding: 0; }
+  html { zoom: var(--ui-scale, 1); }
+
+  /* ---- High contrast mode (Round 11 Settings option) ---- */
+  body.high-contrast {
+    --panel: #18130f;
+    --panel-strong: #0e0b08;
+    --chip-bg: #1d1811;
+    --chip-bg-lit: #322a1e;
+    --ink: #ffffff;
+    --ink-dim: #fbf8f0;
+    --ink-faint: #e7e0cf;
+    --border: rgba(255,255,255,0.4);
+    --border-strong: rgba(255,255,255,0.65);
+  }
+  body.high-contrast .filter-list .filter-row { background: #18130f; border-width: 2px; }
+  body.high-contrast .filter-value,
+  body.high-contrast .icon-caption,
+  body.high-contrast .filter-name { font-weight: 800; }
+
   body {
     font-family: var(--font-body);
     color: var(--ink);
@@ -114,20 +139,34 @@
     background: linear-gradient(to bottom, rgba(9,7,5,0.8) 0%, rgba(9,7,5,0.68) 60%, rgba(9,7,5,0) 100%);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    overflow: visible;
   }
   .app-title {
     margin: 0;
     flex: 1;
+    align-self: stretch;
     display: flex;
     justify-content: center;
+    position: relative;
   }
   /* Round 7: replaced the CSS-gradient/per-letter text treatment with
-     Jerry's own logo artwork (transparent PNG). */
+     Jerry's own logo artwork (transparent PNG). Round 11: sized to fill
+     most of the header's width rather than a fixed height — at the
+     logo's aspect ratio that makes it taller than the header bar itself,
+     so it's positioned absolutely and allowed to spill down past the
+     header's bottom edge over the page content beneath (per Jerry, that's
+     the intended look — the die hanging below the bar is fine). */
   .app-title-logo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -34%);
+    width: min(84%, 320px);
     max-width: 100%;
-    height: 40px;
-    width: auto;
+    height: auto;
     filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+    pointer-events: none;
+    z-index: 1;
   }
   .corner-icon {
     width: 40px; height: 40px; flex-shrink: 0;
@@ -189,7 +228,8 @@
     width: 46px; height: 46px; flex-shrink: 0;
     border-radius: 12px;
     background: var(--chip-bg);
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1px;
     color: var(--icon-grey);
     transition: background 0.15s ease, color 0.15s ease;
   }
@@ -198,19 +238,40 @@
   .icon-chip img.icon-svg { width: 24px; height: 24px; object-fit: contain; filter: grayscale(1) brightness(1.6) opacity(0.55); transition: filter 0.15s ease; }
   .icon-chip.is-lit img.icon-svg { filter: none; }
 
+  /* Round 10: selected values are no longer written out as words in the
+     bubble text — they're shown right on the icon instead, via a tiny
+     caption under the glyph (Play Time / Complexity / mixed Game Type) or a
+     small count badge (Username / Player Count / Tags), so the icon alone
+     tells you what's set. */
+  .icon-caption {
+    font-size: 8px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.02em; line-height: 1; color: currentColor;
+    display: none;
+  }
+  .icon-caption.is-shown { display: block; }
+
   /* ---- Per-category "lit" colors ---- */
-  /* Game Type: cooperative = single blue; competitive = three distinct figure colors */
+  /* Game Type: cooperative = interlocked chain-link in one blue; competitive
+     = two wedges facing off in one red (a literal handshake / boxing gloves
+     didn't read clearly at this icon's tiny render size — these stand in
+     for "working together" / "head to head" instead); both picked at once
+     = neutral 3-figure icon
+     plus a "Mixed" caption. */
+  /* Round 12: reverted to the original three-figure icon, recolored only
+     (the round-10/11 chain-link and clashing-triangle glyphs are gone) —
+     Cooperative shares one color across all three figures ("one team"),
+     Competitive keeps each figure its own distinct color ("every player
+     for themselves"), and neither-selected stays the default gray. */
   .icon-chip.lit-coop { color: var(--coop-blue); }
-  .icon-chip.lit-noncoop { color: var(--icon-grey); }
   .icon-chip.lit-noncoop .fig-1 { color: var(--type-c1); }
   .icon-chip.lit-noncoop .fig-2 { color: var(--type-c2); }
   .icon-chip.lit-noncoop .fig-3 { color: var(--type-c3); }
-  /* Play Time: green/yellow/orange/red by bucket */
+  /* Play Time: green/yellow/orange/red by bucket; mixed = neutral */
   .icon-chip.time-short { color: var(--time-short); }
   .icon-chip.time-medium { color: var(--time-medium); }
   .icon-chip.time-long { color: var(--time-long); }
   .icon-chip.time-epic { color: var(--time-epic); }
-  /* Complexity: green/yellow/orange by weight */
+  /* Complexity: green/yellow/orange by weight; mixed = neutral */
   .icon-chip.cx-light { color: var(--cx-light); }
   .icon-chip.cx-medium { color: var(--cx-medium); }
   .icon-chip.cx-heavy { color: var(--cx-heavy); }
@@ -230,9 +291,21 @@
   .icon-badge.is-shown { display: flex; }
 
   .filter-text { min-width: 0; text-align: center; }
-  .filter-name { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); margin: 0 0 2px; text-align: center; }
-  .filter-value { font-size: 15.5px; font-weight: 600; color: var(--ink-dim); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+  /* Round 10: the bubble's text is now always just the question — selected
+     values live on the icon instead (see .icon-caption / .icon-badge
+     above), so filter-name (the old value subtitle) is retired and
+     filter-value no longer swaps to the chosen value or shrinks. */
+  .filter-name { display: none; }
+  .filter-value {
+    font-size: 19px; font-weight: 700; color: var(--ink-dim); margin: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;
+  }
   .filter-row.is-set .filter-value { color: var(--ink); }
+  .filter-value {
+    font-size: 19px; font-weight: 700; color: var(--ink-dim); margin: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;
+  }
+  .filter-row.is-set .filter-value { font-size: 15.5px; font-weight: 600; color: var(--ink); }
 
   .cta-results {
     margin: 18px 0 6px;
@@ -297,6 +370,8 @@
 
   .option-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .option-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .option-grid.cols-4 { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .option-grid.cols-4 .option-btn { padding: 12px 2px; font-size: 13px; }
   .option-btn {
     border: 1px solid var(--border);
     background: var(--chip-bg);
@@ -354,6 +429,24 @@
   }
   .tag-row.is-active .toggle-switch { background: var(--tag-lit); border-color: transparent; }
   .tag-row.is-active .toggle-switch::after { transform: translateX(18px); background: #06210f; }
+  /* Standalone use (Settings panel toggles, not inside a .tag-row) */
+  .toggle-switch.is-active { background: var(--tag-lit); border-color: transparent; }
+  .toggle-switch.is-active::after { transform: translateX(18px); background: #06210f; }
+
+  /* ---- Settings panel: accessibility options (Round 11) ---- */
+  .settings-section-label {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--ink-faint); margin: 4px 0 8px;
+  }
+  #scale-grid { margin-bottom: 18px; }
+  .settings-toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 10px 2px; margin-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-toggle-row:last-of-type { border-bottom: none; margin-bottom: 14px; }
+  .settings-toggle-label { font-size: 15px; color: var(--ink); display: flex; flex-direction: column; gap: 2px; }
+  .settings-toggle-sub { font-size: 12px; font-weight: 400; color: var(--ink-faint); }
 
   /* ---- Any/All segmented mode toggle (tags picker) ---- */
   .tag-mode-toggle { display: flex; background: var(--chip-bg); border-radius: 12px; padding: 4px; gap: 4px; margin-bottom: 12px; }
@@ -384,6 +477,18 @@
   .fav-row button { font: inherit; }
 
   .fav-heading { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); margin: 4px 0 8px; }
+
+  /* ---- Information panel (Round 12, replaces the old Profile placeholder) ---- */
+  .info-block { text-align: center; margin: 6px 0 20px; }
+  .info-app-name { font-size: 20px; font-weight: 800; color: var(--ink); margin: 0 0 4px; }
+  .info-credit { font-size: 14px; color: var(--ink-dim); margin: 0 0 4px; }
+  .info-version { font-size: 13px; color: var(--ink-faint); margin: 0; }
+  .version-entry { padding: 12px 2px; border-bottom: 1px solid var(--border); }
+  .version-entry:last-child { border-bottom: none; }
+  .version-entry-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+  .version-entry-num { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .version-entry-date { font-size: 12px; color: var(--ink-faint); }
+  .version-entry-notes { font-size: 13.5px; color: var(--ink-dim); line-height: 1.4; margin: 0; }
   .fav-quick-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
   .fav-quick-pill {
     border: 1px solid var(--border); background: var(--chip-bg); color: var(--ink);
@@ -492,8 +597,8 @@
 
 <div class="app-shell">
   <header class="app-header">
-    <button type="button" class="corner-icon" id="profile-btn" aria-label="Profile">
-      <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" fill="currentColor"/></svg>
+    <button type="button" class="corner-icon" id="info-btn" aria-label="Information">
+      <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1.1" fill="currentColor" stroke="none"/></svg>
     </button>
     <h1 class="app-title"><img class="app-title-logo" src="assets/logo-header.png" alt="What Should We Play?"></h1>
     <button type="button" class="corner-icon" id="settings-btn" aria-label="Settings">
@@ -510,10 +615,11 @@
           <span class="filter-row-main">
             <span class="icon-chip" id="chip-username">
               <img class="icon-svg" src="assets/bgg-shield.png" alt="" />
+              <span class="icon-badge" id="badge-username"></span>
             </span>
             <span class="filter-text">
-              <span class="filter-name">Whose Games?</span>
-              <span class="filter-value" id="label-username">Enter BGG username</span>
+              <span class="filter-name" id="sub-username"></span>
+              <span class="filter-value" id="label-username">Whose Games?</span>
             </span>
           </span>
           <button type="button" class="filter-clear-btn" data-clear="username">Clear</button>
@@ -526,8 +632,8 @@
               <span class="icon-badge" id="badge-players"></span>
             </span>
             <span class="filter-text">
-              <span class="filter-name">Who's Playing?</span>
-              <span class="filter-value" id="label-players">Player Count</span>
+              <span class="filter-name" id="sub-players"></span>
+              <span class="filter-value" id="label-players">Who's Playing?</span>
             </span>
           </span>
           <button type="button" class="filter-clear-btn" data-clear="players">Clear</button>
@@ -543,8 +649,8 @@
               </svg>
             </span>
             <span class="filter-text">
-              <span class="filter-name">Work in Teams?</span>
-              <span class="filter-value" id="label-type">Game Type</span>
+              <span class="filter-name" id="sub-type"></span>
+              <span class="filter-value" id="label-type">Work in Teams?</span>
             </span>
           </span>
           <button type="button" class="filter-clear-btn" data-clear="type">Clear</button>
@@ -553,14 +659,15 @@
         <div class="filter-row" id="row-time" data-picker="picker-time" role="button" tabindex="0">
           <span class="filter-row-main">
             <span class="icon-chip" id="chip-time">
-              <svg class="icon-svg" viewBox="0 0 24 24">
+              <svg class="icon-svg" viewBox="0 0 24 24" style="width:22px;height:22px;">
                 <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
                 <path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
+              <span class="icon-caption" id="caption-time"></span>
             </span>
             <span class="filter-text">
-              <span class="filter-name">How Long?</span>
-              <span class="filter-value" id="label-time">Play Time</span>
+              <span class="filter-name" id="sub-time"></span>
+              <span class="filter-value" id="label-time">How Long?</span>
             </span>
           </span>
           <button type="button" class="filter-clear-btn" data-clear="time">Clear</button>
@@ -569,11 +676,12 @@
         <div class="filter-row" id="row-complexity" data-picker="picker-complexity" role="button" tabindex="0">
           <span class="filter-row-main">
             <span class="icon-chip" id="chip-complexity">
-              <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></svg>
+              <svg class="icon-svg" viewBox="0 0 24 24" style="width:22px;height:22px;"><path fill="currentColor" d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></svg>
+              <span class="icon-caption" id="caption-complexity"></span>
             </span>
             <span class="filter-text">
-              <span class="filter-name">How Heavy?</span>
-              <span class="filter-value" id="label-complexity">Complexity</span>
+              <span class="filter-name" id="sub-complexity"></span>
+              <span class="filter-value" id="label-complexity">How Heavy?</span>
             </span>
           </span>
           <button type="button" class="filter-clear-btn" data-clear="complexity">Clear</button>
@@ -583,10 +691,11 @@
           <span class="filter-row-main">
             <span class="icon-chip" id="chip-tags">
               <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12.6 2H4a2 2 0 0 0-2 2v8.6c0 .53.21 1.04.59 1.41l9.4 9.4a2 2 0 0 0 2.82 0l7.99-7.99a2 2 0 0 0 0-2.82l-9.4-9.4A2 2 0 0 0 12.6 2z"/><circle cx="7.5" cy="7.5" r="1.6" fill="var(--chip-bg)"/></svg>
+              <span class="icon-badge" id="badge-tags"></span>
             </span>
             <span class="filter-text">
-              <span class="filter-name">What Else?</span>
-              <span class="filter-value" id="label-tags">Tags</span>
+              <span class="filter-name" id="sub-tags"></span>
+              <span class="filter-value" id="label-tags">What Else?</span>
             </span>
           </span>
           <button type="button" class="filter-clear-btn" data-clear="tags">Clear</button>
@@ -711,13 +820,47 @@
   </div>
 </div>
 
-<!-- ---- Picker: Settings (favorite usernames) ---- -->
+<!-- ---- Picker: Settings (favorite usernames + accessibility options) ---- -->
 <div class="picker-overlay" id="picker-settings" hidden>
   <div class="picker-panel">
     <div class="picker-head">
       <h3 class="picker-title">Settings</h3>
       <button type="button" class="picker-close" data-close>&#10005;</button>
     </div>
+
+    <p class="settings-section-label">Text size</p>
+    <div class="option-grid cols-3" id="scale-grid">
+      <button type="button" class="option-btn" data-scale="0.9">A-</button>
+      <button type="button" class="option-btn" data-scale="1">Normal</button>
+      <button type="button" class="option-btn" data-scale="1.15">A+</button>
+    </div>
+
+    <p class="settings-section-label">Sound</p>
+    <div class="option-grid cols-4" id="sound-grid">
+      <button type="button" class="option-btn" data-sound="off">Off</button>
+      <button type="button" class="option-btn" data-sound="low">Low</button>
+      <button type="button" class="option-btn" data-sound="normal">Normal</button>
+      <button type="button" class="option-btn" data-sound="high">High</button>
+    </div>
+
+    <div class="settings-toggle-row">
+      <span class="settings-toggle-label">
+        High contrast
+        <span class="settings-toggle-sub">Opaque bubbles, brighter text</span>
+      </span>
+      <span class="toggle-switch" id="high-contrast-toggle" role="switch" tabindex="0" aria-checked="false"></span>
+    </div>
+
+    <div class="settings-toggle-row">
+      <span class="settings-toggle-label">
+        Reduce motion
+        <span class="settings-toggle-sub">Turns off the background scroll effect</span>
+      </span>
+      <span class="toggle-switch" id="reduce-motion-toggle" role="switch" tabindex="0" aria-checked="false"></span>
+    </div>
+
+    <button type="button" class="picker-btn secondary full" id="reset-defaults-btn">Reset to Defaults</button>
+
     <p class="picker-note">Save BoardGameGeek usernames here so they're a quick pick from the username field — handy for a regular game group. Saved on this device only.</p>
     <div class="username-field-row">
       <input type="text" id="fav-add-input" placeholder="BGG username to save" autocomplete="off" spellcheck="false" />
@@ -727,14 +870,20 @@
   </div>
 </div>
 
-<!-- ---- Picker: Profile (placeholder) ---- -->
-<div class="picker-overlay" id="picker-profile" hidden>
+<!-- ---- Picker: Information (app name, credit, version, update notes) ---- -->
+<div class="picker-overlay" id="picker-info" hidden>
   <div class="picker-panel">
     <div class="picker-head">
-      <h3 class="picker-title">Profile</h3>
+      <h3 class="picker-title">Information</h3>
       <button type="button" class="picker-close" data-close>&#10005;</button>
     </div>
-    <p class="picker-note">Account features are coming soon. For now, use the BoardGameGeek field on the home screen to load a collection, and Settings to save favorite usernames.</p>
+    <div class="info-block">
+      <p class="info-app-name">What Should We Play?</p>
+      <p class="info-credit">Designed by Jerry J. Hoban</p>
+      <p class="info-version" id="info-version"></p>
+    </div>
+    <p class="fav-heading">Update notes</p>
+    <div id="version-history"></div>
   </div>
 </div>
 
@@ -761,6 +910,242 @@
 
   var currentResults = [];
   var selectedGame = null;
+
+  // ---- Settings: text size, high contrast, sound, reduce motion (Round 12) ----
+  var SCALE_KEY = 'wswp_ui_scale';
+  var CONTRAST_KEY = 'wswp_high_contrast';
+  var SOUND_KEY = 'wswp_sound_level';
+  var MOTION_KEY = 'wswp_reduce_motion';
+  var SETTINGS_DEFAULTS = { scale: '1', contrast: false, sound: 'normal', motion: false };
+
+  var uiScale = SETTINGS_DEFAULTS.scale;
+  var highContrast = SETTINGS_DEFAULTS.contrast;
+  var soundLevel = SETTINGS_DEFAULTS.sound; // 'off' | 'low' | 'normal' | 'high'
+  var reduceMotion = SETTINGS_DEFAULTS.motion;
+  try { uiScale = localStorage.getItem(SCALE_KEY) || SETTINGS_DEFAULTS.scale; } catch (e) {}
+  try { highContrast = localStorage.getItem(CONTRAST_KEY) === '1'; } catch (e) {}
+  try { soundLevel = localStorage.getItem(SOUND_KEY) || SETTINGS_DEFAULTS.sound; } catch (e) {}
+  try { reduceMotion = localStorage.getItem(MOTION_KEY) === '1'; } catch (e) {}
+
+  function applyUiScale() {
+    document.documentElement.style.setProperty('--ui-scale', uiScale);
+    document.querySelectorAll('#scale-grid .option-btn').forEach(function (b) {
+      b.classList.toggle('is-active', b.getAttribute('data-scale') === uiScale);
+    });
+  }
+  function applyHighContrast() {
+    document.body.classList.toggle('high-contrast', highContrast);
+    var t = document.getElementById('high-contrast-toggle');
+    t.classList.toggle('is-active', highContrast);
+    t.setAttribute('aria-checked', String(highContrast));
+  }
+  function applySoundUI() {
+    document.querySelectorAll('#sound-grid .option-btn').forEach(function (b) {
+      b.classList.toggle('is-active', b.getAttribute('data-sound') === soundLevel);
+    });
+  }
+  function applyReduceMotion() {
+    var t = document.getElementById('reduce-motion-toggle');
+    t.classList.toggle('is-active', reduceMotion);
+    t.setAttribute('aria-checked', String(reduceMotion));
+    if (reduceMotion) {
+      var shelfEl = document.getElementById('bg-shelf');
+      var tableEl = document.getElementById('bg-table');
+      if (shelfEl) shelfEl.style.transform = '';
+      if (tableEl) tableEl.style.transform = '';
+    }
+  }
+
+  // ---- Sound feedback (Web Audio, synthesized in code — no audio files).
+  // Round 11 originally shipped real vibration (navigator.vibrate), which
+  // Jerry didn't want; round 12 replaces it with a short audible tick
+  // instead, so it works everywhere including iPhone (which never
+  // implemented the Vibration API but has always supported Web Audio). ----
+  var SOUND_VOLUME = { off: 0, low: 0.12, normal: 0.28, high: 0.5 };
+  var audioCtx = null;
+  function getAudioCtx() {
+    if (audioCtx) return audioCtx;
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) audioCtx = new Ctx();
+    } catch (e) {}
+    return audioCtx;
+  }
+  function playTick() {
+    var vol = SOUND_VOLUME[soundLevel];
+    if (!vol) return;
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') { ctx.resume().catch(function () {}); }
+    var t0 = ctx.currentTime;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1000, t0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(vol, t0 + 0.003);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.035);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.05);
+  }
+  // Attempt at a "board game box being opened" sound for the results-list
+  // expand action: a soft low thud (the lid catching) plus a short
+  // filtered-noise whoosh that sweeps upward (the rustle of a lid
+  // lifting), synthesized from an oscillator and a burst of filtered
+  // white noise — there's no recorded sample to draw on in this
+  // environment. This is a best-effort abstraction, not a verified "it
+  // sounds like a box" — that can only be judged by ear, not by this
+  // build's automated checks, so treat it as a first attempt to react to,
+  // not a finished feature. Falls back to nothing extra (just relies on
+  // the plain tick already wired to buttons) if it doesn't land.
+  function playExpandSound() {
+    var vol = SOUND_VOLUME[soundLevel];
+    if (!vol) return;
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') { ctx.resume().catch(function () {}); }
+    var t0 = ctx.currentTime;
+
+    var thud = ctx.createOscillator();
+    var thudGain = ctx.createGain();
+    thud.type = 'sine';
+    thud.frequency.setValueAtTime(140, t0);
+    thud.frequency.exponentialRampToValueAtTime(70, t0 + 0.12);
+    thudGain.gain.setValueAtTime(0, t0);
+    thudGain.gain.linearRampToValueAtTime(vol * 0.9, t0 + 0.008);
+    thudGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+    thud.connect(thudGain).connect(ctx.destination);
+    thud.start(t0);
+    thud.stop(t0 + 0.18);
+
+    var bufferSize = Math.max(1, Math.floor(ctx.sampleRate * 0.22));
+    var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
+    var noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    var filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.setValueAtTime(0.8, t0);
+    filter.frequency.setValueAtTime(500, t0 + 0.02);
+    filter.frequency.exponentialRampToValueAtTime(2600, t0 + 0.2);
+    var noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0, t0);
+    noiseGain.gain.linearRampToValueAtTime(vol * 0.5, t0 + 0.03);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+    noise.connect(filter).connect(noiseGain).connect(ctx.destination);
+    noise.start(t0 + 0.02);
+    noise.stop(t0 + 0.24);
+  }
+
+  document.querySelectorAll('#scale-grid .option-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      uiScale = b.getAttribute('data-scale');
+      try { localStorage.setItem(SCALE_KEY, uiScale); } catch (e) {}
+      applyUiScale();
+    });
+  });
+  document.querySelectorAll('#sound-grid .option-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      soundLevel = b.getAttribute('data-sound');
+      try { localStorage.setItem(SOUND_KEY, soundLevel); } catch (e) {}
+      applySoundUI();
+      // No explicit confirmation tick here — the generic delegated button
+      // listener below already plays one for every button press, including
+      // this one; adding another here would double it up.
+    });
+  });
+  function toggleHighContrast() {
+    highContrast = !highContrast;
+    try { localStorage.setItem(CONTRAST_KEY, highContrast ? '1' : '0'); } catch (e) {}
+    applyHighContrast();
+  }
+  function toggleReduceMotion() {
+    reduceMotion = !reduceMotion;
+    try { localStorage.setItem(MOTION_KEY, reduceMotion ? '1' : '0'); } catch (e) {}
+    applyReduceMotion();
+  }
+  function resetSettingsToDefaults() {
+    uiScale = SETTINGS_DEFAULTS.scale;
+    highContrast = SETTINGS_DEFAULTS.contrast;
+    soundLevel = SETTINGS_DEFAULTS.sound;
+    reduceMotion = SETTINGS_DEFAULTS.motion;
+    try {
+      localStorage.setItem(SCALE_KEY, uiScale);
+      localStorage.setItem(CONTRAST_KEY, highContrast ? '1' : '0');
+      localStorage.setItem(SOUND_KEY, soundLevel);
+      localStorage.setItem(MOTION_KEY, reduceMotion ? '1' : '0');
+    } catch (e) {}
+    applyUiScale();
+    applyHighContrast();
+    applySoundUI();
+    applyReduceMotion();
+  }
+  document.getElementById('high-contrast-toggle').addEventListener('click', toggleHighContrast);
+  document.getElementById('high-contrast-toggle').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleHighContrast(); }
+  });
+  document.getElementById('reduce-motion-toggle').addEventListener('click', toggleReduceMotion);
+  document.getElementById('reduce-motion-toggle').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleReduceMotion(); }
+  });
+  document.getElementById('reset-defaults-btn').addEventListener('click', resetSettingsToDefaults);
+
+  applyUiScale();
+  applyHighContrast();
+  applySoundUI();
+  applyReduceMotion();
+
+  // Play a light tick on any real button press (option toggles, Clear,
+  // Confirm, tag rows, corner icons, etc.) — a single delegated listener
+  // rather than instrumenting every handler individually. Capture phase so
+  // it still fires even if a specific handler later calls
+  // stopPropagation() (e.g. the per-row Clear buttons). Results-row expand
+  // taps are handled separately (see renderResults) so they don't also
+  // double up with this generic tick.
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('button, [role="switch"], [role="button"], .tag-row');
+    if (el) playTick();
+  }, true);
+
+  // ---- Information panel: app credit + version/update-notes history
+  // (Round 12, replaces the old Profile placeholder). Newest entry first;
+  // add a new entry here at the top of the array with every future build. ----
+  var APP_VERSION = 'V02.01';
+  var VERSION_HISTORY = [
+    {
+      version: 'V02.01',
+      date: 'September 6, 2026',
+      notes: "This is a fully functioning prototype that uses BoardGameGeek's API to pull game collection data. This app is not yet intended for public use."
+    }
+  ];
+  function renderVersionInfo() {
+    document.getElementById('info-version').textContent = 'Version ' + APP_VERSION;
+    var list = document.getElementById('version-history');
+    list.innerHTML = '';
+    VERSION_HISTORY.forEach(function (entry) {
+      var row = document.createElement('div');
+      row.className = 'version-entry';
+      var head = document.createElement('div');
+      head.className = 'version-entry-head';
+      var num = document.createElement('span');
+      num.className = 'version-entry-num';
+      num.textContent = entry.version;
+      var date = document.createElement('span');
+      date.className = 'version-entry-date';
+      date.textContent = entry.date;
+      head.appendChild(num);
+      head.appendChild(date);
+      var notes = document.createElement('p');
+      notes.className = 'version-entry-notes';
+      notes.textContent = entry.notes;
+      row.appendChild(head);
+      row.appendChild(notes);
+      list.appendChild(row);
+    });
+  }
+  renderVersionInfo();
 
   // ---- Bucketing helpers (kept independent of the raw game-data fields
   // returned by the live BGG collection API) ----
@@ -850,19 +1235,24 @@
     var label = document.getElementById('label-username');
     var chip = document.getElementById('chip-username');
     var has = !!state.username;
-    label.textContent = has ? state.username : 'Enter BGG username';
+    // The bubble's text is always just the question now — a loaded
+    // username is shown as a small "1" badge on the icon instead (matching
+    // the count badges on Player Count / Tags), not spelled out in words.
+    label.textContent = 'Whose Games?';
     document.getElementById('row-username').classList.toggle('is-set', has);
     chip.classList.toggle('is-lit', has);
+    var badge = document.getElementById('badge-username');
+    if (has) { badge.textContent = '1'; badge.classList.add('is-shown'); }
+    else { badge.classList.remove('is-shown'); }
   }
 
   function playerLabel(n) { return (n >= 6 ? '6+' : String(n)) + ' Player' + (n === 1 ? '' : 's'); }
 
   function renderPlayersRow() {
     var has = state.players.length > 0;
-    var label = !has ? 'Player Count'
-      : state.players.length === 1 ? playerLabel(state.players[0])
-      : state.players.slice().sort(function (a, b) { return a - b; }).map(function (n) { return n >= 6 ? '6+' : n; }).join(', ') + ' Players';
-    document.getElementById('label-players').textContent = label;
+    // Bubble text is always just the question — the actual player count(s)
+    // are shown on the icon's badge instead (unchanged from before).
+    document.getElementById('label-players').textContent = "Who's Playing?";
     setRowLit('row-players', 'chip-players', has);
     var badge = document.getElementById('badge-players');
     if (has) {
@@ -872,44 +1262,70 @@
   }
 
   function renderTypeRow() {
-    var has = state.types.length > 0;
-    document.getElementById('label-type').textContent = has ? state.types.join(' or ') : 'Game Type';
+    // Round 11: Game Type is single-select (picking both used to be
+    // equivalent to Clear). Round 12: back to one three-figure icon for
+    // every state, just recolored — no separate glyphs to swap between.
+    var hasCoop = state.types.indexOf('Cooperative') !== -1;
+    var hasCompetitive = state.types.indexOf('Competitive') !== -1;
+    var has = hasCoop || hasCompetitive;
+    document.getElementById('label-type').textContent = 'Work in Teams?';
     setRowLit('row-type', 'chip-type', has);
+
     var chip = document.getElementById('chip-type');
     chip.classList.remove('lit-coop', 'lit-noncoop');
-    if (state.types.indexOf('Cooperative') !== -1) chip.classList.add('lit-coop');
-    if (state.types.indexOf('Competitive') !== -1) chip.classList.add('lit-noncoop');
+    if (hasCoop) chip.classList.add('lit-coop');
+    else if (hasCompetitive) chip.classList.add('lit-noncoop');
   }
 
   function renderTimeRow() {
     var has = state.times.length > 0;
-    document.getElementById('label-time').textContent = has ? state.times.join(', ') : 'Play Time';
+    document.getElementById('label-time').textContent = 'How Long?';
     setRowLit('row-time', 'chip-time', has);
     var chip = document.getElementById('chip-time');
     ['time-short', 'time-medium', 'time-long', 'time-epic'].forEach(function (c) { chip.classList.remove(c); });
-    var timePriority = ['Epic', 'Long', 'Medium', 'Short'];
-    var timeChosen = timePriority.filter(function (t) { return state.times.indexOf(t) !== -1; })[0];
-    if (timeChosen) chip.classList.add(TIME_COLOR[timeChosen]);
+    // One bucket picked: caption + color show that bucket. Two or more:
+    // caption just says "Mixed" and the icon stays neutral (is-lit only).
+    var caption = document.getElementById('caption-time');
+    if (state.times.length === 1) {
+      caption.textContent = state.times[0];
+      caption.classList.add('is-shown');
+      chip.classList.add(TIME_COLOR[state.times[0]]);
+    } else if (state.times.length > 1) {
+      caption.textContent = 'Mixed';
+      caption.classList.add('is-shown');
+    } else {
+      caption.textContent = '';
+      caption.classList.remove('is-shown');
+    }
   }
 
   function renderComplexityRow() {
     var has = state.complexities.length > 0;
-    document.getElementById('label-complexity').textContent = has ? state.complexities.join(', ') : 'Complexity';
+    document.getElementById('label-complexity').textContent = 'How Heavy?';
     setRowLit('row-complexity', 'chip-complexity', has);
     var chip = document.getElementById('chip-complexity');
     ['cx-light', 'cx-medium', 'cx-heavy'].forEach(function (c) { chip.classList.remove(c); });
-    var cxPriority = ['Heavy', 'Medium', 'Light'];
-    var cxChosen = cxPriority.filter(function (c) { return state.complexities.indexOf(c) !== -1; })[0];
-    if (cxChosen) chip.classList.add(CX_COLOR[cxChosen]);
+    var caption = document.getElementById('caption-complexity');
+    if (state.complexities.length === 1) {
+      caption.textContent = state.complexities[0];
+      caption.classList.add('is-shown');
+      chip.classList.add(CX_COLOR[state.complexities[0]]);
+    } else if (state.complexities.length > 1) {
+      caption.textContent = 'Mixed';
+      caption.classList.add('is-shown');
+    } else {
+      caption.textContent = '';
+      caption.classList.remove('is-shown');
+    }
   }
 
   function renderTagsRow() {
     var has = state.tags.length > 0;
-    var label = !has ? 'Tags'
-      : state.tags.length === 1 ? state.tags[0]
-      : state.tags.length + ' tags (' + state.tagMode.toLowerCase() + ')';
-    document.getElementById('label-tags').textContent = label;
+    document.getElementById('label-tags').textContent = 'What Else?';
     setRowLit('row-tags', 'chip-tags', has);
+    var badge = document.getElementById('badge-tags');
+    if (has) { badge.textContent = String(state.tags.length); badge.classList.add('is-shown'); }
+    else { badge.classList.remove('is-shown'); }
   }
 
   function renderAllRows() {
@@ -947,7 +1363,9 @@
   });
   document.getElementById('players-confirm-btn').addEventListener('click', function () { closePicker('picker-players'); });
 
-  // ---- Picker: Game Type (multi-select toggles) ----
+  // ---- Picker: Game Type (single-select toggle — Round 11: picking both
+  // was equivalent to Clear, so only one of Cooperative/Competitive can be
+  // active at a time; clicking the active one again toggles it off) ----
   var typeGrid = document.getElementById('type-grid');
   var TYPE_OPTIONS = [{ v: 'Cooperative', label: 'Cooperative' }, { v: 'Competitive', label: 'Competitive' }];
   function renderTypeGrid() {
@@ -958,8 +1376,8 @@
       b.className = 'option-btn' + (state.types.indexOf(opt.v) !== -1 ? ' is-active' : '');
       b.textContent = opt.label;
       b.addEventListener('click', function () {
-        var idx = state.types.indexOf(opt.v);
-        if (idx === -1) { state.types.push(opt.v); } else { state.types.splice(idx, 1); }
+        var isActive = state.types.indexOf(opt.v) !== -1;
+        state.types = isActive ? [] : [opt.v];
         renderTypeGrid();
         renderAllRows();
       });
@@ -1238,7 +1656,7 @@
   document.querySelectorAll('[data-close]').forEach(function (btn) {
     btn.addEventListener('click', function () { btn.closest('.picker-overlay').hidden = true; });
   });
-  document.getElementById('profile-btn').addEventListener('click', function () { openPicker('picker-profile'); });
+  document.getElementById('info-btn').addEventListener('click', function () { openPicker('picker-info'); });
   document.getElementById('settings-btn').addEventListener('click', function () { openPicker('picker-settings'); });
 
   // ---- Per-row Clear buttons ----
@@ -1292,6 +1710,7 @@
       row.addEventListener('click', function () {
         if (selectedGame === g) return;
         selectedGame = g;
+        playExpandSound();
         renderResults();
       });
 
@@ -1449,6 +1868,7 @@
   var table = document.getElementById('bg-table');
   var ticking = false;
   function applyParallax() {
+    if (reduceMotion) { ticking = false; return; }
     var y = window.scrollY || window.pageYOffset || 0;
     shelf.style.transform = 'translateY(' + (y * 0.12) + 'px)';
     table.style.transform = 'translateY(' + (y * 0.32) + 'px)';
