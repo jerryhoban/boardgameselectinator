@@ -39,6 +39,13 @@ export default {
       return handleCollection(url, env);
     }
 
+    if (url.pathname === '/api/feedback') {
+      if (request.method !== 'POST') {
+        return jsonResponse({ error: 'Method not allowed.' }, 405);
+      }
+      return handleFeedback(request, env);
+    }
+
     // Everything else (index.html, and any other static file) is served by
     // the "assets" binding Cloudflare sets up from wrangler.jsonc.
     return env.ASSETS.fetch(request);
@@ -51,7 +58,7 @@ async function handleCollection(url, env) {
   if (!username) {
     return jsonResponse({ error: 'Enter a BoardGameGeek username.' }, 400);
   }
-  const token = await resolveToken(env);
+  const token = await resolveSecret(env.BGG_TOKEN);
   if (!token) {
     return jsonResponse(
       {
@@ -82,13 +89,94 @@ async function handleCollection(url, env) {
 // a classic secret shows up on `env` as a plain string, while a Secrets
 // Store binding shows up as an object with an async .get() method instead.
 // Support both so this keeps working regardless of which one was used when
-// the binding was added in the dashboard.
-async function resolveToken(env) {
-  const raw = env.BGG_TOKEN;
+// the binding was added in the dashboard — shared by BGG_TOKEN and
+// RESEND_API_KEY below.
+async function resolveSecret(raw) {
   if (!raw) return null;
   if (typeof raw === 'string') return raw;
   if (typeof raw.get === 'function') return await raw.get();
   return null;
+}
+
+// ---- Feedback form -> email, via Resend (Round 13) ------------------------
+// The Feedback screen in index.html posts { rating, message } here. This
+// sends one plain-text email per submission to Jerry's own inbox using
+// Resend's free tier. Because the recipient is always the same address that
+// owns the Resend account, this deliberately uses Resend's built-in sandbox
+// sender (onboarding@resend.dev) rather than a verified custom domain —
+// that sandbox sender is restricted to sending only to the account's own
+// email, which is exactly this use case, so no domain purchase or DNS work
+// is needed. If this app ever needs to email anyone other than the
+// developer, a verified sending domain would be required instead.
+const FEEDBACK_TO_EMAIL = 'jerryhoban@gmail.com';
+const FEEDBACK_FROM = 'What Should We Play? Feedback <onboarding@resend.dev>';
+const RATING_LABELS = {
+  1: '1 - I will never use this',
+  2: '2 - I would rarely use this',
+  3: '3 - I will occasionally use this',
+  4: '4 - I will frequently use this',
+  5: '5 - I will use this at almost every gaming session',
+};
+
+async function handleFeedback(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return jsonResponse({ error: 'Invalid feedback submission.' }, 400);
+  }
+
+  const rating = Number.isInteger(body.rating) && body.rating >= 1 && body.rating <= 5 ? body.rating : null;
+  const message = typeof body.message === 'string' ? body.message.trim().slice(0, 4000) : '';
+
+  if (!rating && !message) {
+    return jsonResponse({ error: 'Please select a rating or enter a message before sending.' }, 400);
+  }
+
+  const apiKey = await resolveSecret(env.RESEND_API_KEY);
+  if (!apiKey) {
+    return jsonResponse(
+      {
+        error:
+          'Server is missing its RESEND_API_KEY secret. Add it as a binding named RESEND_API_KEY under this Worker’s Bindings tab.',
+      },
+      500
+    );
+  }
+
+  const bodyLines = [
+    'Rating: ' + (rating ? RATING_LABELS[rating] : '(not provided)'),
+    '',
+    'Message:',
+    message || '(not provided)',
+  ];
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: FEEDBACK_FROM,
+        to: [FEEDBACK_TO_EMAIL],
+        subject: 'New app feedback' + (rating ? ' — ' + rating + '/5' : ''),
+        text: bodyLines.join('\n'),
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      return jsonResponse(
+        { error: `Resend rejected the email (status ${res.status}).`, detail: errText.slice(0, 300) },
+        502
+      );
+    }
+    return jsonResponse({ ok: true });
+  } catch (err) {
+    return jsonResponse({ error: err && err.message ? err.message : String(err) }, 502);
+  }
 }
 
 function jsonResponse(data, status = 200) {

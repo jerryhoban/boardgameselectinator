@@ -328,7 +328,7 @@
   .cta-results:disabled { opacity: 0.55; cursor: default; box-shadow: var(--shadow); }
 
   /* ---- Footer badge ---- */
-  .powered-by { display: flex; justify-content: center; padding: 14px 0 20px; }
+  .powered-by { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px 0 20px; gap: 10px; }
   .powered-by-bar {
     display: flex; align-items: center; justify-content: center;
     background: rgba(10, 8, 6, 0.55);
@@ -339,6 +339,24 @@
     -webkit-backdrop-filter: blur(4px);
   }
   .powered-by img { height: 42px; opacity: 0.95; display: block; }
+
+  /* ---- Feedback bubble (Round 13) — same pill shape/size as the
+     powered-by-bar badge above, as a tappable link into the Feedback
+     screen. ---- */
+  .feedback-bubble {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(10, 8, 6, 0.55);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 10px 26px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: var(--ink-dim);
+    font-family: var(--font-results);
+    font-size: 14px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    cursor: pointer;
+  }
+  .feedback-bubble:hover { color: var(--ink); border-color: var(--border-strong); }
 
   /* ---- Picker overlays ---- */
   .picker-overlay {
@@ -435,6 +453,7 @@
 
   /* ---- Settings panel: accessibility options (Round 11) ---- */
   .settings-section-label {
+    display: block;
     font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
     color: var(--ink-faint); margin: 4px 0 8px;
   }
@@ -587,6 +606,35 @@
   }
   .back-btn:hover { border-color: var(--ink-dim); }
   .back-btn-icon { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* ---- Feedback screen (Round 13) ---- */
+  .feedback-intro { color: var(--ink-dim); font-size: 14px; margin: 0 0 18px; line-height: 1.4; }
+  .rating-scale { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 22px; }
+  .rating-btn {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    border: 1px solid var(--border); background: var(--chip-bg); color: var(--ink);
+    border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left;
+    font-family: inherit;
+  }
+  .rating-btn:hover { border-color: var(--border-strong); }
+  .rating-btn.is-active { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+  .rating-num {
+    flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--chip-bg-lit); font-weight: 800; font-size: 13px;
+  }
+  .rating-btn.is-active .rating-num { background: rgba(12, 21, 16, 0.25); color: var(--accent-ink); }
+  .rating-label { font-size: 14.5px; font-weight: 600; line-height: 1.3; }
+  .feedback-text-block { margin-bottom: 20px; }
+  .feedback-textarea {
+    width: 100%; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid var(--border); background: var(--chip-bg); color: var(--ink);
+    font-size: 15px; font-family: inherit; resize: vertical; min-height: 110px;
+  }
+  .feedback-textarea:focus { outline: none; border-color: var(--border-strong); }
+  .feedback-status { font-size: 13.5px; margin: 12px 0 0; text-align: center; }
+  .feedback-status.is-error { color: var(--danger); }
+  .feedback-status.is-success { color: var(--tag-lit); }
 </style>
 </head>
 <body>
@@ -720,9 +768,41 @@
         </div>
       </div>
     </section>
+
+    <!-- FEEDBACK SCREEN -->
+    <section id="view-feedback" class="screen" hidden>
+      <div class="results-layout">
+        <div class="results-main">
+          <button type="button" class="back-btn" id="back-to-search-feedback">
+            <svg class="back-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+            Back to Search
+          </button>
+          <h2 class="results-heading">Feedback</h2>
+          <p class="feedback-intro">Your thoughts go straight to the developer &mdash; thanks for trying this out.</p>
+
+          <p class="settings-section-label">How often do you think you'll use this app?</p>
+          <div class="rating-scale" id="rating-scale">
+            <button type="button" class="rating-btn" data-rating="1"><span class="rating-num">1</span><span class="rating-label">I will never use this</span></button>
+            <button type="button" class="rating-btn" data-rating="2"><span class="rating-num">2</span><span class="rating-label">I would rarely use this</span></button>
+            <button type="button" class="rating-btn" data-rating="3"><span class="rating-num">3</span><span class="rating-label">I will occasionally use this</span></button>
+            <button type="button" class="rating-btn" data-rating="4"><span class="rating-num">4</span><span class="rating-label">I will frequently use this</span></button>
+            <button type="button" class="rating-btn" data-rating="5"><span class="rating-num">5</span><span class="rating-label">I will use this at almost every gaming session</span></button>
+          </div>
+
+          <div class="feedback-text-block">
+            <label class="settings-section-label" for="feedback-text">Issues or ideas for improvement</label>
+            <textarea id="feedback-text" class="feedback-textarea" rows="5" placeholder="Tell us what's broken, confusing, or what you'd like to see added..."></textarea>
+          </div>
+
+          <button type="button" class="cta-results" id="feedback-submit-btn">Send Feedback</button>
+          <p class="feedback-status" id="feedback-status" hidden></p>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="powered-by">
+    <button type="button" class="feedback-bubble" id="feedback-btn">Feedback</button>
     <div class="powered-by-bar">
       <img src="assets/powered-by-bgg.webp" alt="Powered by BGG" />
     </div>
@@ -1112,8 +1192,13 @@
   // ---- Information panel: app credit + version/update-notes history
   // (Round 12, replaces the old Profile placeholder). Newest entry first;
   // add a new entry here at the top of the array with every future build. ----
-  var APP_VERSION = 'V02.01';
+  var APP_VERSION = 'V02.02';
   var VERSION_HISTORY = [
+    {
+      version: 'V02.02',
+      date: 'September 7, 2026',
+      notes: "Added a Feedback link at the bottom of the app. Rate how often you'd expect to use this, and leave a note about any issues or ideas for improvement — it's emailed straight to the developer."
+    },
     {
       version: 'V02.01',
       date: 'September 6, 2026',
@@ -1853,6 +1938,7 @@
   function goTo(name) {
     document.getElementById('view-search').hidden = name !== 'search';
     document.getElementById('view-results').hidden = name !== 'results';
+    document.getElementById('view-feedback').hidden = name !== 'feedback';
     window.scrollTo({ top: 0, behavior: 'auto' });
   }
 
@@ -1862,6 +1948,75 @@
     goTo('results');
   });
   document.getElementById('back-to-search').addEventListener('click', function () { goTo('search'); });
+  document.getElementById('back-to-search-feedback').addEventListener('click', function () { goTo('search'); });
+
+  // ---- Feedback screen (Round 13) — posts to the Worker's /api/feedback
+  // endpoint, which emails the submission via Resend. Rating is a plain
+  // single-select (click sets it, no toggle-off), matching the Text Size /
+  // Sound Level option-grid pattern elsewhere in this file. ----
+  var feedbackRating = null;
+  var feedbackSending = false;
+
+  function renderFeedbackRating() {
+    document.querySelectorAll('#rating-scale .rating-btn').forEach(function (b) {
+      b.classList.toggle('is-active', Number(b.getAttribute('data-rating')) === feedbackRating);
+    });
+  }
+  document.querySelectorAll('#rating-scale .rating-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      feedbackRating = Number(b.getAttribute('data-rating'));
+      renderFeedbackRating();
+    });
+  });
+
+  function setFeedbackStatus(msg, kind) {
+    var note = document.getElementById('feedback-status');
+    note.textContent = msg || '';
+    note.hidden = !msg;
+    note.classList.toggle('is-error', kind === 'error');
+    note.classList.toggle('is-success', kind === 'success');
+  }
+
+  document.getElementById('feedback-btn').addEventListener('click', function () {
+    setFeedbackStatus('', null);
+    goTo('feedback');
+  });
+
+  document.getElementById('feedback-submit-btn').addEventListener('click', function () {
+    if (feedbackSending) return;
+    var textEl = document.getElementById('feedback-text');
+    var text = textEl.value.trim();
+    if (!feedbackRating && !text) {
+      setFeedbackStatus('Pick a rating or add a note before sending.', 'error');
+      return;
+    }
+    feedbackSending = true;
+    var btn = document.getElementById('feedback-submit-btn');
+    btn.disabled = true;
+    setFeedbackStatus('Sending…', null);
+    fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating: feedbackRating, message: text })
+    })
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (result) {
+        if (!result.ok || result.data.error) {
+          throw new Error((result.data && result.data.error) || 'Could not send feedback.');
+        }
+        setFeedbackStatus('Thanks — your feedback was sent!', 'success');
+        feedbackRating = null;
+        renderFeedbackRating();
+        textEl.value = '';
+      })
+      .catch(function (err) {
+        setFeedbackStatus('Couldn’t send feedback (' + err.message + '). Please try again.', 'error');
+      })
+      .finally(function () {
+        feedbackSending = false;
+        btn.disabled = false;
+      });
+  });
 
   // ---- Parallax background ----
   var shelf = document.getElementById('bg-shelf');
