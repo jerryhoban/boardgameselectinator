@@ -415,7 +415,14 @@ function parseThingItem(itemXml) {
 
     const mechanics = allLinkValues(itemXml, 'boardgamemechanic');
     const categories = allLinkValues(itemXml, 'boardgamecategory');
-    const isCooperative = categories.some((c) => /cooperative game/i.test(c));
+    // "Cooperative Game" (and "Semi-Cooperative Game") are BGG *mechanics*,
+    // not categories — the original code checked `categories`, which never
+    // contains either value, so every game was silently falling through to
+    // Competitive regardless of its real BGG classification (Round 15 bug
+    // fix). Matched against the trimmed, exact mechanic name so "Semi-
+    // Cooperative Game" doesn't also match the plain "Cooperative Game" test.
+    const isCooperative = mechanics.some((m) => /^cooperative game$/i.test(m.trim()));
+    const isSemiCooperative = mechanics.some((m) => /^semi-cooperative game$/i.test(m.trim()));
 
     const pavgSource =
       minplaytime && maxplaytime ? (minplaytime + maxplaytime) / 2 : playingtime || minplaytime || maxplaytime || null;
@@ -427,13 +434,18 @@ function parseThingItem(itemXml) {
       r: average,
       cat: parsePlayerCountPoll(itemXml),
       type: isCooperative ? 'Cooperative' : 'Competitive',
+      // Semi-Cooperative games (e.g. Battlestar Galactica, Dead of Winter)
+      // should show up under either the Cooperative or Competitive filter
+      // rather than being forced into just one bucket — see evaluate() in
+      // index.html, which lets this flag bypass the strict Type match.
+      semiCoop: isSemiCooperative,
       pmin: minplayers,
       pmax: maxplayers,
       pavg: pavgSource !== null ? Math.round(pavgSource) : null,
       w: averageweight,
       cx: complexityBucket(averageweight),
       mech: mechanics,
-      theme: categories.filter((c) => !/cooperative game/i.test(c)),
+      theme: categories,
       age: parseRecommendedAge(itemXml) || minage || null,
       curated: true,
     };

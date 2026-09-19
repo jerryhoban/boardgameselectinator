@@ -5,6 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>What Should We Play?</title>
 
+<!-- Round 15: link-preview tags (Open Graph + Twitter Card). There were none
+     of these before, so apps unfurling a shared link had nothing explicit to
+     use and fell back to guesswork/stale caches — this is why an old logo
+     kept showing up in shared links. Pointed at the live custom domain now
+     that it's attached, rather than the .workers.dev address. -->
+<meta property="og:title" content="What Should We Play?">
+<meta property="og:description" content="Pick a board game to play from your BoardGameGeek collection based on player count, ages, and time available.">
+<meta property="og:image" content="https://whatshouldweplay.app/assets/icon-512.png">
+<meta property="og:url" content="https://whatshouldweplay.app/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="What Should We Play?">
+<meta name="twitter:description" content="Pick a board game to play from your BoardGameGeek collection based on player count, ages, and time available.">
+<meta name="twitter:image" content="https://whatshouldweplay.app/assets/icon-512.png">
+
 <!-- PWA: lets phones install this as a home-screen app (Add to Home Screen)
      without going through the App Store / Play Store. -->
 <link rel="manifest" href="manifest.json">
@@ -61,6 +76,11 @@
     --cx-heavy: #ef4444;
     --tag-lit: #22c55e;
     --danger: #f87171;
+    /* Round 15: a second, visually distinct badge color for the "Who's
+       Playing?" icon's minimum-age indicator, so it reads as a different
+       piece of information from the player-count badge next to it. */
+    --badge-alt: #3b82f6;
+    --badge-alt-ink: #eff6ff;
 
     --shadow: 0 8px 30px -10px rgba(0,0,0,0.6);
 
@@ -180,7 +200,7 @@
   .corner-icon:hover { color: var(--ink); border-color: var(--border-strong); }
   .corner-icon svg { width: 20px; height: 20px; }
 
-  main { flex: 1; display: flex; flex-direction: column; padding-bottom: 18px; }
+  main { flex: 1; display: flex; flex-direction: column; padding-bottom: 190px; }
   .screen[hidden] { display: none; }
 
   /* ---- Filter list (home screen) ---- */
@@ -271,10 +291,13 @@
   .icon-chip.time-medium { color: var(--time-medium); }
   .icon-chip.time-long { color: var(--time-long); }
   .icon-chip.time-epic { color: var(--time-epic); }
-  /* Complexity: green/yellow/orange by weight; mixed = neutral */
-  .icon-chip.cx-light { color: var(--cx-light); }
-  .icon-chip.cx-medium { color: var(--cx-medium); }
-  .icon-chip.cx-heavy { color: var(--cx-heavy); }
+  /* Complexity: each puzzle piece lights up on its own (Round 15) — fig-1 =
+     Light, fig-2 = Heavy, fig-3 = Medium — so selecting more than one
+     complexity lights up more than one piece at once, and unselected pieces
+     stay the default grey. */
+  .icon-chip.cx-has-light .fig-1 { color: var(--cx-light); }
+  .icon-chip.cx-has-heavy .fig-2 { color: var(--cx-heavy); }
+  .icon-chip.cx-has-medium .fig-3 { color: var(--cx-medium); }
   /* Tags: single green once any tag is selected */
   #chip-tags.is-lit { color: var(--tag-lit); }
 
@@ -289,6 +312,21 @@
     border: 2px solid var(--chip-bg-lit);
   }
   .icon-badge.is-shown { display: flex; }
+  /* Round 15: minimum-age badge on the "Who's Playing?" icon — mirrors
+     .icon-badge but sits bottom-left in a different color, so it stays
+     legible alongside the existing bottom-right player-count badge when
+     both a player count and a minimum age are set at once. */
+  .icon-badge-alt {
+    position: absolute; left: -4px; bottom: -4px; right: auto;
+    min-width: 19px; height: 19px; padding: 0 4px;
+    border-radius: 999px;
+    background: var(--badge-alt);
+    color: var(--badge-alt-ink);
+    font-size: 10px; font-weight: 700;
+    display: none; align-items: center; justify-content: center;
+    border: 2px solid var(--chip-bg-lit);
+  }
+  .icon-badge-alt.is-shown { display: flex; }
 
   .filter-text { min-width: 0; text-align: center; }
   /* Round 10: the bubble's text is now always just the question — selected
@@ -301,11 +339,6 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;
   }
   .filter-row.is-set .filter-value { color: var(--ink); }
-  .filter-value {
-    font-size: 19px; font-weight: 700; color: var(--ink-dim); margin: 0;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;
-  }
-  .filter-row.is-set .filter-value { font-size: 15.5px; font-weight: 600; color: var(--ink); }
 
   .cta-results {
     margin: 18px 0 6px;
@@ -327,8 +360,16 @@
   .cta-results.has-results { box-shadow: var(--shadow), 0 0 20px 2px rgba(101, 190, 143, 0.55); }
   .cta-results:disabled { opacity: 0.55; cursor: default; box-shadow: var(--shadow); }
 
-  /* ---- Footer badge ---- */
-  .powered-by { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px 0 20px; gap: 10px; }
+  /* ---- Footer badge (Round 14: pinned to the viewport so the Feedback
+     bubble is reachable from the search screen AND the results screen
+     without scrolling past a long results list first) ---- */
+  .powered-by {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 16px 16px 18px; gap: 10px;
+    max-width: 560px; margin: 0 auto;
+    background: linear-gradient(to top, rgba(9,7,5,0.94) 0%, rgba(9,7,5,0.86) 55%, rgba(9,7,5,0) 100%);
+  }
   .powered-by-bar {
     display: flex; align-items: center; justify-content: center;
     background: rgba(10, 8, 6, 0.55);
@@ -590,6 +631,7 @@
   }
   .featured-tag.type-coop { background: rgba(59,130,246,0.25); color: #bfdbfe; }
   .featured-tag.type-comp { background: rgba(239,68,68,0.2); color: #fecaca; }
+  .featured-tag.type-semi { background: rgba(168,85,247,0.22); color: #e9d5ff; }
 
   .featured-link {
     display: inline-block; margin-top: 12px; font-family: var(--font-body); font-size: 13px;
@@ -678,6 +720,7 @@
             <span class="icon-chip" id="chip-players">
               <svg class="icon-svg" viewBox="0 0 48 32"><circle cx="16" cy="10" r="7" fill="currentColor"/><path d="M2 30c0-8 6-13 14-13s14 5 14 13" fill="currentColor"/><circle cx="34" cy="10" r="7" fill="currentColor"/><path d="M20 30c0-8 6-13 14-13s14 5 14 13" fill="currentColor"/></svg>
               <span class="icon-badge" id="badge-players"></span>
+              <span class="icon-badge icon-badge-alt" id="badge-players-age"></span>
             </span>
             <span class="filter-text">
               <span class="filter-name" id="sub-players"></span>
@@ -724,7 +767,17 @@
         <div class="filter-row" id="row-complexity" data-picker="picker-complexity" role="button" tabindex="0">
           <span class="filter-row-main">
             <span class="icon-chip" id="chip-complexity">
-              <svg class="icon-svg" viewBox="0 0 24 24" style="width:22px;height:22px;"><path fill="currentColor" d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></svg>
+              <!-- Round 15: three interlocked puzzle pieces (reusing the
+                   original single-piece glyph three times, scaled down and
+                   overlapped) instead of one flat glyph — fig-1 = Light,
+                   fig-2 = Heavy, fig-3 = Medium, each lighting up on its own
+                   so more than one selected complexity lights up more than
+                   one piece. -->
+              <svg class="icon-svg" viewBox="0 0 30 30" style="width:26px;height:26px;">
+                <g class="fig fig-1" transform="translate(0,2) scale(0.62)"><path fill="currentColor" d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></g>
+                <g class="fig fig-2" transform="translate(15,0) scale(0.62)"><path fill="currentColor" d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></g>
+                <g class="fig fig-3" transform="translate(7,15) scale(0.62)"><path fill="currentColor" d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></g>
+              </svg>
               <span class="icon-caption" id="caption-complexity"></span>
             </span>
             <span class="filter-text">
@@ -1192,8 +1245,18 @@
   // ---- Information panel: app credit + version/update-notes history
   // (Round 12, replaces the old Profile placeholder). Newest entry first;
   // add a new entry here at the top of the array with every future build. ----
-  var APP_VERSION = 'V02.02';
+  var APP_VERSION = 'V02.04';
   var VERSION_HISTORY = [
+    {
+      version: 'V02.04',
+      date: 'September 18, 2026',
+      notes: "Fixed the Cooperative filter, which wasn't matching any games. Sharing a link to the app now shows the current logo instead of an old one. Added a small age badge next to the player-count icon so it's clear when a minimum age is set. And gave the Complexity icon a refresh — three puzzle pieces now light up individually to show which complexity level(s) are selected."
+    },
+    {
+      version: 'V02.03',
+      date: 'September 7, 2026',
+      notes: "The Feedback link is now pinned to the bottom of every screen (search and results), so it's always reachable without having to scroll past a long results list first."
+    },
     {
       version: 'V02.02',
       date: 'September 7, 2026',
@@ -1203,6 +1266,11 @@
       version: 'V02.01',
       date: 'September 6, 2026',
       notes: "This is a fully functioning prototype that uses BoardGameGeek's API to pull game collection data. This app is not yet intended for public use."
+    },
+    {
+      version: 'V01.01',
+      date: 'Originally',
+      notes: "Welcome to What Should We Play (initially called Board Game Selectinator)! This started as an Excel tool to help decide what to play when we got together with friends and family to game."
     }
   ];
   function renderVersionInfo() {
@@ -1249,8 +1317,6 @@
     if (bucket === 'Medium') return gameCx === 'Medium' || gameCx === 'Intermediate';
     return gameCx === bucket;
   }
-  var CX_COLOR = { Light: 'cx-light', Medium: 'cx-medium', Heavy: 'cx-heavy' };
-
   function isCooperative(g) { return g.type === 'Cooperative'; }
 
   function gameTagList(g) {
@@ -1277,7 +1343,7 @@
       var matchesPlayers = state.players.some(function (p) { return catForPlayers(game, p) >= 1; });
       if (!matchesPlayers) return false;
     }
-    if (state.types.length) {
+    if (state.types.length && !game.semiCoop) {
       var coop = isCooperative(game);
       var gameType = coop ? 'Cooperative' : 'Competitive';
       if (state.types.indexOf(gameType) === -1) return false;
@@ -1334,16 +1400,26 @@
   function playerLabel(n) { return (n >= 6 ? '6+' : String(n)) + ' Player' + (n === 1 ? '' : 's'); }
 
   function renderPlayersRow() {
-    var has = state.players.length > 0;
+    var hasPlayers = state.players.length > 0;
+    var hasAge = state.youngestAge != null;
     // Bubble text is always just the question — the actual player count(s)
     // are shown on the icon's badge instead (unchanged from before).
     document.getElementById('label-players').textContent = "Who's Playing?";
-    setRowLit('row-players', 'chip-players', has);
+    // Round 15: the icon should light up for EITHER a player count or a
+    // minimum age (previously only checked player count, so setting just an
+    // age left the icon looking unset even though the age filter was
+    // already being applied to results).
+    setRowLit('row-players', 'chip-players', hasPlayers || hasAge);
     var badge = document.getElementById('badge-players');
-    if (has) {
+    if (hasPlayers) {
       badge.textContent = state.players.length === 1 ? (state.players[0] >= 6 ? '6+' : String(state.players[0])) : String(state.players.length);
       badge.classList.add('is-shown');
     } else { badge.classList.remove('is-shown'); }
+    var ageBadge = document.getElementById('badge-players-age');
+    if (hasAge) {
+      ageBadge.textContent = state.youngestAge + '+';
+      ageBadge.classList.add('is-shown');
+    } else { ageBadge.classList.remove('is-shown'); }
   }
 
   function renderTypeRow() {
@@ -1389,12 +1465,16 @@
     document.getElementById('label-complexity').textContent = 'How Heavy?';
     setRowLit('row-complexity', 'chip-complexity', has);
     var chip = document.getElementById('chip-complexity');
-    ['cx-light', 'cx-medium', 'cx-heavy'].forEach(function (c) { chip.classList.remove(c); });
+    // Round 15: each puzzle piece lights up independently for whichever
+    // complexity level(s) are selected, instead of the whole chip taking on
+    // one flat color.
+    chip.classList.toggle('cx-has-light', state.complexities.indexOf('Light') !== -1);
+    chip.classList.toggle('cx-has-medium', state.complexities.indexOf('Medium') !== -1);
+    chip.classList.toggle('cx-has-heavy', state.complexities.indexOf('Heavy') !== -1);
     var caption = document.getElementById('caption-complexity');
     if (state.complexities.length === 1) {
       caption.textContent = state.complexities[0];
       caption.classList.add('is-shown');
-      chip.classList.add(CX_COLOR[state.complexities[0]]);
     } else if (state.complexities.length > 1) {
       caption.textContent = 'Mixed';
       caption.classList.add('is-shown');
@@ -1444,6 +1524,7 @@
   document.getElementById('age-input').addEventListener('input', function (e) {
     var v = parseInt(e.target.value, 10);
     state.youngestAge = (e.target.value === '' || isNaN(v)) ? null : v;
+    renderPlayersRow();
     recompute();
   });
   document.getElementById('players-confirm-btn').addEventListener('click', function () { closePicker('picker-players'); });
@@ -1878,8 +1959,8 @@
     var tags = document.createElement('div');
     tags.className = 'featured-tags';
     var typeTag = document.createElement('span');
-    typeTag.className = 'featured-tag ' + (isCooperative(g) ? 'type-coop' : 'type-comp');
-    typeTag.textContent = isCooperative(g) ? 'Cooperative' : 'Competitive';
+    typeTag.className = 'featured-tag ' + (g.semiCoop ? 'type-semi' : (isCooperative(g) ? 'type-coop' : 'type-comp'));
+    typeTag.textContent = g.semiCoop ? 'Semi-Cooperative' : (isCooperative(g) ? 'Cooperative' : 'Competitive');
     tags.appendChild(typeTag);
     (g.mech || []).concat(g.theme || []).forEach(function (t) {
       var tag = document.createElement('span');
