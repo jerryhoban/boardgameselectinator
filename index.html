@@ -555,6 +555,24 @@
     border-radius: 999px; padding: 8px 14px; font-size: 14px; cursor: pointer;
   }
   .fav-quick-pill:hover { border-color: var(--border-strong); }
+  /* Round 16: a saved username already in the active "Whose Games?" list
+     shows as filled/accented, since tapping it again removes it. */
+  .fav-quick-pill.is-active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  /* Round 16: chip for each currently-active username, with its own remove
+     button — same pill shape as the saved-usernames quick-list, but never a
+     plain <button> itself (the remove control needs to be its own
+     tappable target). */
+  .active-user-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+    border-radius: 999px; padding: 8px 8px 8px 14px; font-size: 14px;
+  }
+  .active-user-remove {
+    border: none; background: rgba(0,0,0,0.18); color: inherit;
+    width: 20px; height: 20px; border-radius: 999px; line-height: 1;
+    font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .active-user-remove:hover { background: rgba(0,0,0,0.32); }
   .manage-fav-link {
     display: inline-block; background: none; border: none; padding: 0; margin-top: 2px;
     color: var(--ink-faint); font-size: 13px; text-decoration: underline; cursor: pointer;
@@ -668,12 +686,13 @@
   .rating-btn.is-active .rating-num { background: rgba(12, 21, 16, 0.25); color: var(--accent-ink); }
   .rating-label { font-size: 14.5px; font-weight: 600; line-height: 1.3; }
   .feedback-text-block { margin-bottom: 20px; }
-  .feedback-textarea {
+  .feedback-textarea, .feedback-input {
     width: 100%; padding: 12px 14px; border-radius: 12px;
     border: 1px solid var(--border); background: var(--chip-bg); color: var(--ink);
-    font-size: 15px; font-family: inherit; resize: vertical; min-height: 110px;
+    font-size: 15px; font-family: inherit;
   }
-  .feedback-textarea:focus { outline: none; border-color: var(--border-strong); }
+  .feedback-textarea { resize: vertical; min-height: 110px; }
+  .feedback-textarea:focus, .feedback-input:focus { outline: none; border-color: var(--border-strong); }
   .feedback-status { font-size: 13.5px; margin: 12px 0 0; text-align: center; }
   .feedback-status.is-error { color: var(--danger); }
   .feedback-status.is-success { color: var(--tag-lit); }
@@ -767,16 +786,18 @@
         <div class="filter-row" id="row-complexity" data-picker="picker-complexity" role="button" tabindex="0">
           <span class="filter-row-main">
             <span class="icon-chip" id="chip-complexity">
-              <!-- Round 15: three interlocked puzzle pieces (reusing the
-                   original single-piece glyph three times, scaled down and
-                   overlapped) instead of one flat glyph — fig-1 = Light,
-                   fig-2 = Heavy, fig-3 = Medium, each lighting up on its own
-                   so more than one selected complexity lights up more than
-                   one piece. -->
-              <svg class="icon-svg" viewBox="0 0 30 30" style="width:26px;height:26px;">
-                <g class="fig fig-1" transform="translate(0,2) scale(0.62)"><path fill="currentColor" d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></g>
-                <g class="fig fig-2" transform="translate(15,0) scale(0.62)"><path fill="currentColor" d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></g>
-                <g class="fig fig-3" transform="translate(7,15) scale(0.62)"><path fill="currentColor" d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></g>
+              <!-- Round 16: Jerry's exact reference artwork, traced into 3
+                   vector paths (one per interlocking piece) so it stays
+                   perfectly crisp at any zoom level — fig-1 = Light (green),
+                   fig-2 = Heavy (red), fig-3 = Medium (yellow), each lighting
+                   up on its own so more than one selected complexity lights
+                   up more than one piece. Replaces the Round 15 version,
+                   which reused one simple glyph path three times as an
+                   approximation. -->
+              <svg class="icon-svg" viewBox="0 0 1020 1020" style="width:32px;height:32px;">
+                <g class="fig fig-1"><path fill="currentColor" d="M 1011.0,870.5 L 853.0,869.5 L 840.5,856.0 L 838.5,840.0 L 858.5,794.0 L 856.5,766.0 L 840.0,742.5 L 821.0,731.5 L 800.0,726.5 L 783.0,728.5 L 762.0,738.5 L 752.5,746.0 L 742.5,763.0 L 740.5,794.0 L 759.5,838.0 L 757.5,856.0 L 744.0,870.5 L 580.0,870.5 L 575.5,866.0 L 574.5,708.0 L 566.0,701.5 L 554.0,700.5 L 524.0,715.5 L 502.0,720.5 L 483.0,719.5 L 465.0,712.5 L 444.5,693.0 L 434.5,674.0 L 431.5,645.0 L 436.5,625.0 L 445.5,609.0 L 462.0,592.5 L 484.0,581.5 L 514.0,582.5 L 556.0,601.5 L 574.5,594.0 L 576.5,438.0 L 583.0,431.5 L 742.0,433.5 L 754.5,446.0 L 756.5,468.0 L 738.5,508.0 L 738.5,536.0 L 753.0,560.5 L 786.0,576.5 L 809.0,575.5 L 828.0,567.5 L 842.5,557.0 L 853.5,539.0 L 857.5,526.0 L 856.5,512.0 L 836.5,466.0 L 838.5,447.0 L 850.0,434.5 L 1011.0,433.5 L 1014.5,437.0 L 1014.5,867.0 L 1011.0,870.5 Z"/></g>
+                <g class="fig fig-2"><path fill="currentColor" d="M 377.0,1014.5 L 353.0,1014.5 L 335.0,1008.5 L 303.5,977.0 L 299.5,963.0 L 299.5,939.0 L 318.5,893.0 L 317.5,882.0 L 311.0,872.5 L 152.0,870.5 L 147.5,866.0 L 147.5,711.0 L 144.0,704.5 L 130.0,699.5 L 89.0,717.5 L 56.0,719.5 L 33.0,709.5 L 8.5,679.0 L 4.5,643.0 L 10.5,620.0 L 42.0,586.5 L 62.0,580.5 L 81.0,581.5 L 128.0,601.5 L 146.5,593.0 L 148.5,435.0 L 153.0,430.5 L 288.0,430.5 L 293.0,435.5 L 304.0,435.5 L 308.0,431.5 L 313.0,434.5 L 325.5,448.0 L 328.5,464.0 L 322.5,478.0 L 312.5,485.0 L 316.5,490.0 L 308.5,507.0 L 309.5,516.0 L 304.5,521.0 L 312.5,543.0 L 308.5,548.0 L 311.0,546.5 L 317.5,553.0 L 319.5,556.0 L 315.5,560.0 L 321.0,565.5 L 325.0,561.5 L 336.0,570.5 L 356.0,577.5 L 359.0,575.5 L 364.0,580.5 L 394.0,574.5 L 410.0,563.5 L 414.0,567.5 L 419.5,562.0 L 415.5,558.0 L 422.0,551.5 L 425.5,553.0 L 421.5,549.0 L 431.5,529.0 L 428.5,525.0 L 431.5,517.0 L 421.5,494.0 L 425.5,489.0 L 413.5,478.0 L 408.5,467.0 L 412.5,463.0 L 408.5,454.0 L 410.5,449.0 L 425.0,433.5 L 578.0,435.5 L 584.5,442.0 L 582.5,591.0 L 562.0,608.5 L 555.0,608.5 L 513.0,589.5 L 486.0,588.5 L 472.0,592.5 L 449.5,612.0 L 439.5,642.0 L 443.5,680.0 L 452.5,696.0 L 470.0,708.5 L 486.0,712.5 L 512.0,711.5 L 559.0,692.5 L 571.0,698.5 L 582.5,711.0 L 584.5,863.0 L 579.0,869.5 L 432.0,869.5 L 424.0,873.5 L 417.5,892.0 L 435.5,930.0 L 436.5,966.0 L 428.5,983.0 L 409.0,1002.5 L 377.0,1014.5 Z"/></g>
+                <g class="fig fig-3"><path fill="currentColor" d="M 379.0,587.5 L 358.0,587.5 L 334.0,579.5 L 316.5,566.0 L 302.5,548.0 L 297.5,531.0 L 298.5,509.0 L 317.5,463.0 L 311.0,444.5 L 153.0,442.5 L 148.5,438.0 L 148.5,274.0 L 161.0,261.5 L 175.0,258.5 L 187.0,260.5 L 221.0,276.5 L 250.0,277.5 L 274.5,264.0 L 291.5,230.0 L 291.5,211.0 L 283.5,189.0 L 270.0,171.5 L 253.0,161.5 L 229.0,158.5 L 177.0,179.5 L 161.0,176.5 L 148.5,164.0 L 148.5,7.0 L 152.0,3.5 L 582.0,3.5 L 585.5,7.0 L 584.5,168.0 L 570.0,180.5 L 551.0,181.5 L 505.0,161.5 L 478.0,165.5 L 461.0,176.5 L 449.5,193.0 L 441.5,227.0 L 445.5,244.0 L 456.5,263.0 L 467.0,272.5 L 485.0,280.5 L 512.0,279.5 L 553.0,261.5 L 572.0,263.5 L 583.5,274.0 L 586.5,434.0 L 578.0,442.5 L 426.0,444.5 L 419.5,455.0 L 419.5,466.0 L 438.5,508.0 L 438.5,537.0 L 428.5,557.0 L 414.0,572.5 L 398.0,582.5 L 379.0,587.5 Z"/></g>
               </svg>
               <span class="icon-caption" id="caption-complexity"></span>
             </span>
@@ -832,6 +853,11 @@
           </button>
           <h2 class="results-heading">Feedback</h2>
           <p class="feedback-intro">Your thoughts go straight to the developer &mdash; thanks for trying this out.</p>
+
+          <div class="feedback-text-block">
+            <label class="settings-section-label" for="feedback-username">Your BGG username</label>
+            <input type="text" id="feedback-username" class="feedback-input" placeholder="Enter your BoardGameGeek username" autocomplete="off" spellcheck="false" />
+          </div>
 
           <p class="settings-section-label">How often do you think you'll use this app?</p>
           <div class="rating-scale" id="rating-scale">
@@ -940,11 +966,19 @@
       <h3 class="picker-title">Whose Games?</h3>
       <button type="button" class="picker-close" data-close>&#10005;</button>
     </div>
+    <!-- Round 16: add one or more BGG usernames — results combine everyone's
+         owned games (union, de-duplicated), rather than one username
+         replacing the last. -->
+    <p class="picker-note">Add one or more BGG usernames — results combine everyone's games.</p>
     <div class="username-field-row">
       <input type="text" id="username-picker-input" placeholder="Enter BGG username" autocomplete="off" spellcheck="false" />
-      <button type="button" class="picker-btn" id="username-load-btn">Load</button>
+      <button type="button" class="picker-btn" id="username-load-btn">Add</button>
     </div>
     <p class="picker-note" id="username-status-note"></p>
+    <div id="username-active-section" hidden>
+      <p class="fav-heading">Playing with</p>
+      <div class="fav-quick-list" id="username-active-list"></div>
+    </div>
     <div id="username-fav-section">
       <p class="fav-heading">Saved usernames</p>
       <div class="fav-quick-list" id="username-fav-list"></div>
@@ -1023,15 +1057,20 @@
 <script>
 (function () {
   // No embedded demo dataset: all game data now comes live from the
-  // BGG collection API for whatever username is entered.
+  // BGG collection API for whatever username(s) are entered.
   var GAMES = [];
+  // Round 16: more than one BGG username can be active at once (union of
+  // everyone's owned games), so each username's collection is cached here
+  // (keyed lowercase for case-insensitive de-duping) and re-merged into
+  // GAMES whenever a username is added or removed — see mergeUsernameGames().
+  var usernameGamesCache = {};
 
   var FAV_KEY = 'wswp_favorite_usernames';
   var favorites = [];
   try { favorites = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch (e) { favorites = []; }
 
   var state = {
-    username: '',
+    usernames: [],
     players: [],
     youngestAge: null,
     types: [],
@@ -1245,8 +1284,13 @@
   // ---- Information panel: app credit + version/update-notes history
   // (Round 12, replaces the old Profile placeholder). Newest entry first;
   // add a new entry here at the top of the array with every future build. ----
-  var APP_VERSION = 'V02.04';
+  var APP_VERSION = 'V02.05';
   var VERSION_HISTORY = [
+    {
+      version: 'V02.05',
+      date: 'September 19, 2026',
+      notes: "You can now add more than one BoardGameGeek username under “Whose Games?” — results combine everyone's owned games. The Complexity icon now uses a cleaner set of puzzle pieces. And the Feedback form now asks for your BGG username so we know who sent it."
+    },
     {
       version: 'V02.04',
       date: 'September 18, 2026',
@@ -1385,15 +1429,15 @@
   function renderUsernameRow() {
     var label = document.getElementById('label-username');
     var chip = document.getElementById('chip-username');
-    var has = !!state.username;
-    // The bubble's text is always just the question now — a loaded
-    // username is shown as a small "1" badge on the icon instead (matching
-    // the count badges on Player Count / Tags), not spelled out in words.
+    var has = state.usernames.length > 0;
+    // The bubble's text is always just the question now — the loaded
+    // username count is shown as a small badge on the icon instead (Round
+    // 16: now a count, since more than one username can be active at once).
     label.textContent = 'Whose Games?';
     document.getElementById('row-username').classList.toggle('is-set', has);
     chip.classList.toggle('is-lit', has);
     var badge = document.getElementById('badge-username');
-    if (has) { badge.textContent = '1'; badge.classList.add('is-shown'); }
+    if (has) { badge.textContent = String(state.usernames.length); badge.classList.add('is-shown'); }
     else { badge.classList.remove('is-shown'); }
   }
 
@@ -1652,6 +1696,9 @@
   document.getElementById('tags-done-btn').addEventListener('click', function () { closePicker('picker-tags'); });
 
   // ---- Username picker: text entry + saved favorites ----
+  // Round 16: more than one BGG username can be active at once — GAMES is
+  // the union of everyone's owned games (de-duplicated by BGG id), rather
+  // than one username replacing the last.
   var usernameLoading = false;
   var usernamePickerInput = document.getElementById('username-picker-input');
   var usernameStatusNote = document.getElementById('username-status-note');
@@ -1661,18 +1708,41 @@
     usernameStatusNote.classList.toggle('is-error', !!isError);
   }
 
-  function loadCollectionFor(username) {
+  function isUsernameActive(name) {
+    var key = name.toLowerCase();
+    return state.usernames.some(function (u) { return u.toLowerCase() === key; });
+  }
+
+  // Rebuilds GAMES from every active username's cached collection, keeping
+  // only the first copy of a game more than one person owns (matched by BGG
+  // id — falls back to the link URL for any older/mocked data without one).
+  function mergeUsernameGames() {
+    var seen = {};
+    var merged = [];
+    state.usernames.forEach(function (u) {
+      var games = usernameGamesCache[u.toLowerCase()] || [];
+      games.forEach(function (g) {
+        var key = g.id != null ? 'id:' + g.id : 'link:' + g.link;
+        if (seen[key]) return;
+        seen[key] = true;
+        merged.push(g);
+      });
+    });
+    GAMES = merged;
+  }
+
+  function addUsername(username) {
+    username = (username || '').trim();
     if (!username || usernameLoading) return;
+    if (isUsernameActive(username)) {
+      setUsernameStatus(username + ' is already added.');
+      return;
+    }
     usernameLoading = true;
-    renderUsernameRow();
     document.getElementById('label-username').textContent = 'Loading…';
-    // Keep the picker open and show progress in it — it used to close
-    // immediately on submit, which meant a success or error message written
-    // to this same status note was never actually seen (the note lives
-    // inside the now-hidden picker, and reopening the picker to check wiped
-    // it again). Now the picker only closes once we actually know the
-    // result, so the message is always visible when it matters most: on
-    // failure.
+    // Keep the picker open and show progress in it, so the status note is
+    // always visible when it matters most (on failure), and so more than
+    // one username can be added in the same visit without reopening.
     setUsernameStatus('Loading ' + username + '’s collection…');
     usernamePickerInput.disabled = true;
     document.getElementById('username-load-btn').disabled = true;
@@ -1683,17 +1753,16 @@
           throw new Error((result.data && result.data.error) || 'Could not load that collection.');
         }
         if (result.data.games && result.data.games.length) {
-          GAMES = result.data.games;
-          state.username = username;
-          setUsernameStatus('Loaded ' + result.data.games.length + ' games from ' + username + '’s collection.');
-          closePicker('picker-username');
+          usernameGamesCache[username.toLowerCase()] = result.data.games;
+          state.usernames.push(username);
+          mergeUsernameGames();
+          setUsernameStatus('Added ' + username + ' (' + result.data.games.length + ' games).');
+          usernamePickerInput.value = '';
         } else {
-          GAMES = [];
           setUsernameStatus((result.data.note || 'No owned games found.') + ' for ' + username + '.', true);
         }
       })
       .catch(function (err) {
-        GAMES = [];
         setUsernameStatus('Couldn’t load live BoardGameGeek data (' + err.message + ').', true);
       })
       .finally(function () {
@@ -1701,7 +1770,40 @@
         usernamePickerInput.disabled = false;
         document.getElementById('username-load-btn').disabled = false;
         renderAllRows();
+        refreshUsernamePickerUI();
       });
+  }
+
+  function removeUsername(username) {
+    var key = username.toLowerCase();
+    state.usernames = state.usernames.filter(function (u) { return u.toLowerCase() !== key; });
+    delete usernameGamesCache[key];
+    mergeUsernameGames();
+    renderAllRows();
+    refreshUsernamePickerUI();
+  }
+
+  function renderActiveUsernameChips() {
+    var wrap = document.getElementById('username-active-list');
+    var section = document.getElementById('username-active-section');
+    wrap.innerHTML = '';
+    if (!state.usernames.length) { section.hidden = true; return; }
+    section.hidden = false;
+    state.usernames.forEach(function (name) {
+      var pill = document.createElement('span');
+      pill.className = 'active-user-pill';
+      var label = document.createElement('span');
+      label.textContent = name;
+      pill.appendChild(label);
+      var remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'active-user-remove';
+      remove.setAttribute('aria-label', 'Remove ' + name);
+      remove.textContent = '✕';
+      remove.addEventListener('click', function () { removeUsername(name); });
+      pill.appendChild(remove);
+      wrap.appendChild(pill);
+    });
   }
 
   function renderUsernameFavList() {
@@ -1713,26 +1815,34 @@
     favorites.forEach(function (name) {
       var pill = document.createElement('button');
       pill.type = 'button';
-      pill.className = 'fav-quick-pill';
+      var active = isUsernameActive(name);
+      pill.className = 'fav-quick-pill' + (active ? ' is-active' : '');
       pill.textContent = name;
+      // Round 16: tapping a saved username toggles it in/out of the active
+      // list (instead of replacing whatever was loaded before).
       pill.addEventListener('click', function () {
-        usernamePickerInput.value = name;
-        loadCollectionFor(name);
+        if (isUsernameActive(name)) { removeUsername(name); }
+        else { addUsername(name); }
       });
       wrap.appendChild(pill);
     });
+  }
+
+  function refreshUsernamePickerUI() {
+    renderActiveUsernameChips();
+    renderUsernameFavList();
   }
 
   usernamePickerInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') {
       e.preventDefault();
       var v = usernamePickerInput.value.trim();
-      if (v) loadCollectionFor(v);
+      if (v) addUsername(v);
     }
   });
   document.getElementById('username-load-btn').addEventListener('click', function () {
     var v = usernamePickerInput.value.trim();
-    if (v) loadCollectionFor(v);
+    if (v) addUsername(v);
   });
   document.getElementById('manage-fav-link').addEventListener('click', function () {
     closePicker('picker-username');
@@ -1762,8 +1872,7 @@
         // Route through the username picker (rather than loading silently)
         // so its status note is visible if this lookup fails.
         openPicker('picker-username');
-        usernamePickerInput.value = name;
-        loadCollectionFor(name);
+        addUsername(name);
       });
       var del = document.createElement('button');
       del.type = 'button'; del.className = 'picker-btn danger'; del.textContent = 'Remove';
@@ -1801,9 +1910,11 @@
     }
     if (id === 'picker-settings') renderFavorites();
     if (id === 'picker-username') {
-      usernamePickerInput.value = state.username || '';
+      // Round 16: this field now only ever ADDS a username, so it always
+      // opens empty rather than prefilled with a single "current" value.
+      usernamePickerInput.value = '';
       setUsernameStatus('');
-      renderUsernameFavList();
+      refreshUsernamePickerUI();
       document.getElementById(id).hidden = false;
       usernamePickerInput.focus();
       return;
@@ -1827,7 +1938,7 @@
 
   // ---- Per-row Clear buttons ----
   function clearFilter(field) {
-    if (field === 'username') { state.username = ''; GAMES = []; setUsernameStatus(''); }
+    if (field === 'username') { state.usernames = []; usernameGamesCache = {}; GAMES = []; setUsernameStatus(''); refreshUsernamePickerUI(); }
     if (field === 'players') { state.players = []; state.youngestAge = null; document.getElementById('age-input').value = ''; }
     if (field === 'type') { state.types = []; }
     if (field === 'time') { state.times = []; }
@@ -2060,13 +2171,27 @@
 
   document.getElementById('feedback-btn').addEventListener('click', function () {
     setFeedbackStatus('', null);
+    // Round 16: BGG username is now required on this form (so responses
+    // from playtesters can be tied back to a person) — default it to
+    // whichever username they're already using, as a convenience, but only
+    // if they haven't typed something else in here already.
+    var usernameEl = document.getElementById('feedback-username');
+    if (!usernameEl.value.trim() && state.usernames.length) {
+      usernameEl.value = state.usernames[0];
+    }
     goTo('feedback');
   });
 
   document.getElementById('feedback-submit-btn').addEventListener('click', function () {
     if (feedbackSending) return;
+    var usernameEl = document.getElementById('feedback-username');
+    var username = usernameEl.value.trim();
     var textEl = document.getElementById('feedback-text');
     var text = textEl.value.trim();
+    if (!username) {
+      setFeedbackStatus('Enter your BGG username before sending.', 'error');
+      return;
+    }
     if (!feedbackRating && !text) {
       setFeedbackStatus('Pick a rating or add a note before sending.', 'error');
       return;
@@ -2078,7 +2203,7 @@
     fetch('/api/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rating: feedbackRating, message: text })
+      body: JSON.stringify({ rating: feedbackRating, message: text, username: username })
     })
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
       .then(function (result) {

@@ -128,7 +128,13 @@ async function handleFeedback(request, env) {
 
   const rating = Number.isInteger(body.rating) && body.rating >= 1 && body.rating <= 5 ? body.rating : null;
   const message = typeof body.message === 'string' ? body.message.trim().slice(0, 4000) : '';
+  // Round 16: BGG username is now required on the Feedback form, so
+  // responses from the public playtest can be tied back to a person.
+  const username = typeof body.username === 'string' ? body.username.trim().slice(0, 200) : '';
 
+  if (!username) {
+    return jsonResponse({ error: 'Please enter your BGG username before sending.' }, 400);
+  }
   if (!rating && !message) {
     return jsonResponse({ error: 'Please select a rating or enter a message before sending.' }, 400);
   }
@@ -145,6 +151,7 @@ async function handleFeedback(request, env) {
   }
 
   const bodyLines = [
+    'BGG username: ' + username,
     'Rating: ' + (rating ? RATING_LABELS[rating] : '(not provided)'),
     '',
     'Message:',
@@ -161,7 +168,7 @@ async function handleFeedback(request, env) {
       body: JSON.stringify({
         from: FEEDBACK_FROM,
         to: [FEEDBACK_TO_EMAIL],
-        subject: 'New app feedback' + (rating ? ' — ' + rating + '/5' : ''),
+        subject: 'New app feedback from ' + username + (rating ? ' — ' + rating + '/5' : ''),
         text: bodyLines.join('\n'),
       }),
     });
@@ -428,6 +435,12 @@ function parseThingItem(itemXml) {
       minplaytime && maxplaytime ? (minplaytime + maxplaytime) / 2 : playingtime || minplaytime || maxplaytime || null;
 
     return {
+      // Round 16: explicit BGG id, so the frontend can de-duplicate a game
+      // that shows up in more than one person's collection when multiple
+      // usernames are active at once (see mergeUsernameGames() in
+      // index.html) — previously only recoverable by parsing it back out of
+      // `link`.
+      id: id,
       n: name || `Game #${id}`,
       link: `https://boardgamegeek.com/boardgame/${id}`,
       image: image || null,
