@@ -157,8 +157,6 @@
     gap: 10px;
     margin: 0 -16px; padding-left: 18px; padding-right: 18px;
     background: linear-gradient(to bottom, rgba(9,7,5,0.8) 0%, rgba(9,7,5,0.68) 60%, rgba(9,7,5,0) 100%);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     overflow: visible;
   }
   .app-title {
@@ -286,11 +284,14 @@
   .icon-chip.lit-noncoop .fig-1 { color: var(--type-c1); }
   .icon-chip.lit-noncoop .fig-2 { color: var(--type-c2); }
   .icon-chip.lit-noncoop .fig-3 { color: var(--type-c3); }
-  /* Play Time: green/yellow/orange/red by bucket; mixed = neutral */
-  .icon-chip.time-short { color: var(--time-short); }
-  .icon-chip.time-medium { color: var(--time-medium); }
-  .icon-chip.time-long { color: var(--time-long); }
-  .icon-chip.time-epic { color: var(--time-epic); }
+  /* Play Time (Round 17): the clock face is four fixed quadrants — each
+     lights up in its own color only when its bucket is selected,
+     independent of the others, so e.g. Short+Long lights only those two
+     slices and leaves Medium's grey in between. */
+  .icon-chip.time-has-short .fig-1 { color: var(--time-short); }
+  .icon-chip.time-has-medium .fig-2 { color: var(--time-medium); }
+  .icon-chip.time-has-long .fig-3 { color: var(--time-long); }
+  .icon-chip.time-has-epic .fig-4 { color: var(--time-epic); }
   /* Complexity: each puzzle piece lights up on its own (Round 15) — fig-1 =
      Light, fig-2 = Heavy, fig-3 = Medium — so selecting more than one
      complexity lights up more than one piece at once, and unselected pieces
@@ -431,6 +432,8 @@
   .option-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
   .option-grid.cols-4 { grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .option-grid.cols-4 .option-btn { padding: 12px 2px; font-size: 13px; }
+  .option-grid.cols-1 { grid-template-columns: 1fr; }
+  .option-grid.cols-1 .option-btn { text-align: left; padding: 12px 16px; }
   .option-btn {
     border: 1px solid var(--border);
     background: var(--chip-bg);
@@ -581,11 +584,34 @@
   /* ---- Results screen ---- */
   .results-layout { display: flex; align-items: flex-start; margin-top: 10px; }
   .results-main { flex: 1; min-width: 0; font-family: var(--font-results); }
+  /* Round 17: the "Results" heading now shares its row with the Sort button. */
+  .results-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .results-heading {
     font-size: 26px; text-transform: uppercase; letter-spacing: 0.03em;
     margin: 4px 0 10px; color: var(--ink);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.85), 0 0 8px rgba(0,0,0,0.5);
   }
-  .results-count { font-family: var(--font-body); font-size: 12.5px; color: var(--ink-faint); margin: -6px 0 12px; }
+  .results-count {
+    font-family: var(--font-body); font-size: 12.5px; color: var(--ink-faint); margin: -6px 0 12px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.85), 0 0 6px rgba(0,0,0,0.5);
+  }
+  .sort-btn {
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    border: 1px solid var(--border-strong); background: var(--panel);
+    color: var(--ink-dim); border-radius: 999px; padding: 8px 14px;
+    font-family: var(--font-body); font-size: 12.5px; font-weight: 600;
+    letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer;
+    margin-top: 4px;
+  }
+  .sort-btn:hover { border-color: var(--ink-dim); color: var(--ink); }
+  .sort-btn-icon { width: 14px; height: 14px; flex-shrink: 0; }
+  .view-more-btn {
+    width: 100%; border: 1px solid var(--border-strong); background: var(--panel);
+    color: var(--ink-dim); border-radius: 14px; padding: 12px; font-family: var(--font-results);
+    font-size: 15px; letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer;
+    margin-top: 4px;
+  }
+  .view-more-btn:hover { border-color: var(--ink-dim); color: var(--ink); }
 
   /* Round 7: the separate "featured card" below the list is gone. The list
      is now a single-expanded accordion — each row is either a compact
@@ -769,9 +795,27 @@
         <div class="filter-row" id="row-time" data-picker="picker-time" role="button" tabindex="0">
           <span class="filter-row-main">
             <span class="icon-chip" id="chip-time">
+              <!-- Round 17: the clock face is split into four fixed
+                   quadrants, one per duration bucket (fig-1 Short 12→3,
+                   fig-2 Medium 3→6, fig-3 Long 6→9, fig-4 Epic 9→12), each
+                   lighting up in its own color only when that bucket is
+                   selected (see .icon-chip.time-has-* below) — independent
+                   of what else is picked, so a non-contiguous pick like
+                   Short+Long leaves Medium's slice grey in between. The hand
+                   is one of two elements: #clock-hand-default is today's
+                   original static hand, shown only when nothing is
+                   selected; #clock-hand-active is a plain rotatable line,
+                   shown once 1+ buckets are picked and rotated by JS to
+                   point at whichever selected bucket reaches furthest
+                   around the face. -->
               <svg class="icon-svg" viewBox="0 0 24 24" style="width:22px;height:22px;">
-                <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
-                <path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path class="fig fig-1" fill="currentColor" d="M12,12 L12,3 A9,9 0 0,1 21,12 Z"/>
+                <path class="fig fig-2" fill="currentColor" d="M12,12 L21,12 A9,9 0 0,1 12,21 Z"/>
+                <path class="fig fig-3" fill="currentColor" d="M12,12 L12,21 A9,9 0 0,1 3,12 Z"/>
+                <path class="fig fig-4" fill="currentColor" d="M12,12 L3,12 A9,9 0 0,1 12,3 Z"/>
+                <circle cx="12" cy="12" r="9" fill="none" stroke="var(--chip-bg)" stroke-width="1"/>
+                <path id="clock-hand-default" d="M12 7v5l3.5 2" fill="none" stroke="var(--chip-bg)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                <line id="clock-hand-active" x1="12" y1="12" x2="12" y2="5" stroke="var(--chip-bg)" stroke-width="1.6" stroke-linecap="round" style="display:none;"/>
               </svg>
               <span class="icon-caption" id="caption-time"></span>
             </span>
@@ -836,9 +880,16 @@
             <svg class="back-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
             Back to Search
           </button>
-          <h2 class="results-heading">Results</h2>
+          <div class="results-title-row">
+            <h2 class="results-heading">Results</h2>
+            <button type="button" class="sort-btn" id="sort-btn" data-picker="picker-sort" aria-label="Sort results">
+              <svg class="sort-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4"/></svg>
+              Sort
+            </button>
+          </div>
           <p class="results-count" id="results-count"></p>
           <div class="top10-list" id="top10-list"></div>
+          <button type="button" class="view-more-btn" id="view-more-btn" hidden>View More</button>
         </div>
       </div>
     </section>
@@ -942,6 +993,25 @@
   </div>
 </div>
 
+<!-- ---- Picker: Sort (Round 17) — single-select, applies immediately on tap
+     and closes itself, since there's no need for a separate Confirm step on
+     a plain radio-style choice. ---- -->
+<div class="picker-overlay" id="picker-sort" hidden>
+  <div class="picker-panel">
+    <div class="picker-head">
+      <h3 class="picker-title">Sort By</h3>
+      <button type="button" class="picker-close" data-close>&#10005;</button>
+    </div>
+    <div class="option-grid cols-1" id="sort-grid">
+      <button type="button" class="option-btn" data-sort="rank">BGG Rank</button>
+      <button type="button" class="option-btn" data-sort="time-asc">Play Time — Shortest First</button>
+      <button type="button" class="option-btn" data-sort="time-desc">Play Time — Longest First</button>
+      <button type="button" class="option-btn" data-sort="cx-asc">Complexity — Lightest First</button>
+      <button type="button" class="option-btn" data-sort="cx-desc">Complexity — Heaviest First</button>
+    </div>
+  </div>
+</div>
+
 <!-- ---- Picker: Tags (multi-select toggles, Any/All mode) ---- -->
 <div class="picker-overlay" id="picker-tags" hidden>
   <div class="picker-panel">
@@ -1008,6 +1078,15 @@
       <button type="button" class="option-btn" data-sound="low">Low</button>
       <button type="button" class="option-btn" data-sound="normal">Normal</button>
       <button type="button" class="option-btn" data-sound="high">High</button>
+    </div>
+
+    <p class="settings-section-label">Default sort (Results screen)</p>
+    <div class="option-grid cols-1" id="sort-default-grid">
+      <button type="button" class="option-btn" data-sort="rank">BGG Rank</button>
+      <button type="button" class="option-btn" data-sort="time-asc">Play Time — Shortest First</button>
+      <button type="button" class="option-btn" data-sort="time-desc">Play Time — Longest First</button>
+      <button type="button" class="option-btn" data-sort="cx-asc">Complexity — Lightest First</button>
+      <button type="button" class="option-btn" data-sort="cx-desc">Complexity — Heaviest First</button>
     </div>
 
     <div class="settings-toggle-row">
@@ -1081,6 +1160,7 @@
   };
 
   var currentResults = [];
+  var visibleCount = 10; // Round 17: "View More" pagination, +10 per click
   var selectedGame = null;
 
   // ---- Settings: text size, high contrast, sound, reduce motion (Round 12) ----
@@ -1088,16 +1168,61 @@
   var CONTRAST_KEY = 'wswp_high_contrast';
   var SOUND_KEY = 'wswp_sound_level';
   var MOTION_KEY = 'wswp_reduce_motion';
-  var SETTINGS_DEFAULTS = { scale: '1', contrast: false, sound: 'normal', motion: false };
+  var SORT_KEY = 'wswp_sort_default';
+  var SETTINGS_DEFAULTS = { scale: '1', contrast: false, sound: 'normal', motion: false, sortDefault: 'rank' };
 
   var uiScale = SETTINGS_DEFAULTS.scale;
   var highContrast = SETTINGS_DEFAULTS.contrast;
   var soundLevel = SETTINGS_DEFAULTS.sound; // 'off' | 'low' | 'normal' | 'high'
   var reduceMotion = SETTINGS_DEFAULTS.motion;
+  var defaultSortOrder = SETTINGS_DEFAULTS.sortDefault; // 'rank' | 'time-asc' | 'time-desc' | 'cx-asc' | 'cx-desc'
   try { uiScale = localStorage.getItem(SCALE_KEY) || SETTINGS_DEFAULTS.scale; } catch (e) {}
   try { highContrast = localStorage.getItem(CONTRAST_KEY) === '1'; } catch (e) {}
   try { soundLevel = localStorage.getItem(SOUND_KEY) || SETTINGS_DEFAULTS.sound; } catch (e) {}
   try { reduceMotion = localStorage.getItem(MOTION_KEY) === '1'; } catch (e) {}
+  try { defaultSortOrder = localStorage.getItem(SORT_KEY) || SETTINGS_DEFAULTS.sortDefault; } catch (e) {}
+
+  // ---- Sort (Round 17): "BGG Rank" (default) plus both directions of Play
+  // Time and Complexity. `currentSort` is the sort active for the results
+  // screen right now; it resets to `defaultSortOrder` every time results are
+  // entered fresh (the "View N Results" button), and only changes mid-visit
+  // if the user taps the Sort button. ----
+  var currentSort = defaultSortOrder;
+  var SORT_COUNT_LABEL = {
+    rank: 'sorted by BGG rating',
+    'time-asc': 'sorted by play time, shortest first',
+    'time-desc': 'sorted by play time, longest first',
+    'cx-asc': 'sorted by complexity, lightest first',
+    'cx-desc': 'sorted by complexity, heaviest first'
+  };
+  function sortComparator(key) {
+    switch (key) {
+      case 'time-asc': return function (a, b) { return (a.pavg || 0) - (b.pavg || 0) || (b.r || 0) - (a.r || 0); };
+      case 'time-desc': return function (a, b) { return (b.pavg || 0) - (a.pavg || 0) || (b.r || 0) - (a.r || 0); };
+      case 'cx-asc': return function (a, b) { return (a.w || 0) - (b.w || 0) || (b.r || 0) - (a.r || 0); };
+      case 'cx-desc': return function (a, b) { return (b.w || 0) - (a.w || 0) || (b.r || 0) - (a.r || 0); };
+      default: return function (a, b) { return (b.r || 0) - (a.r || 0); };
+    }
+  }
+  function sortValueDisplay(g, key) {
+    if (key === 'time-asc' || key === 'time-desc') return g.pavg != null ? Math.round(g.pavg) + 'm' : '—';
+    if (key === 'cx-asc' || key === 'cx-desc') return g.w != null ? g.w.toFixed(1) : '—';
+    return (g.r || 0).toFixed(1);
+  }
+  function sortValueColor(g, key) {
+    if (key === 'rank') return ratingColor(g.r);
+    return 'var(--ink-dim)';
+  }
+  function applySortDefaultUI() {
+    document.querySelectorAll('#sort-default-grid .option-btn').forEach(function (b) {
+      b.classList.toggle('is-active', b.getAttribute('data-sort') === defaultSortOrder);
+    });
+  }
+  function applySortGridUI() {
+    document.querySelectorAll('#sort-grid .option-btn').forEach(function (b) {
+      b.classList.toggle('is-active', b.getAttribute('data-sort') === currentSort);
+    });
+  }
 
   function applyUiScale() {
     document.documentElement.style.setProperty('--ui-scale', uiScale);
@@ -1228,6 +1353,13 @@
       // this one; adding another here would double it up.
     });
   });
+  document.querySelectorAll('#sort-default-grid .option-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      defaultSortOrder = b.getAttribute('data-sort');
+      try { localStorage.setItem(SORT_KEY, defaultSortOrder); } catch (e) {}
+      applySortDefaultUI();
+    });
+  });
   function toggleHighContrast() {
     highContrast = !highContrast;
     try { localStorage.setItem(CONTRAST_KEY, highContrast ? '1' : '0'); } catch (e) {}
@@ -1243,16 +1375,19 @@
     highContrast = SETTINGS_DEFAULTS.contrast;
     soundLevel = SETTINGS_DEFAULTS.sound;
     reduceMotion = SETTINGS_DEFAULTS.motion;
+    defaultSortOrder = SETTINGS_DEFAULTS.sortDefault;
     try {
       localStorage.setItem(SCALE_KEY, uiScale);
       localStorage.setItem(CONTRAST_KEY, highContrast ? '1' : '0');
       localStorage.setItem(SOUND_KEY, soundLevel);
       localStorage.setItem(MOTION_KEY, reduceMotion ? '1' : '0');
+      localStorage.setItem(SORT_KEY, defaultSortOrder);
     } catch (e) {}
     applyUiScale();
     applyHighContrast();
     applySoundUI();
     applyReduceMotion();
+    applySortDefaultUI();
   }
   document.getElementById('high-contrast-toggle').addEventListener('click', toggleHighContrast);
   document.getElementById('high-contrast-toggle').addEventListener('keydown', function (e) {
@@ -1268,6 +1403,7 @@
   applyHighContrast();
   applySoundUI();
   applyReduceMotion();
+  applySortDefaultUI();
 
   // Play a light tick on any real button press (option toggles, Clear,
   // Confirm, tag rows, corner icons, etc.) — a single delegated listener
@@ -1284,8 +1420,13 @@
   // ---- Information panel: app credit + version/update-notes history
   // (Round 12, replaces the old Profile placeholder). Newest entry first;
   // add a new entry here at the top of the array with every future build. ----
-  var APP_VERSION = 'V02.05';
+  var APP_VERSION = 'V02.06';
   var VERSION_HISTORY = [
+    {
+      version: 'V02.06',
+      date: 'September 22, 2026',
+      notes: "Smoothed out the header so it fades instead of cutting off sharply. Results can now show more than just the top 10 — a View More button reveals the rest. Added a Sort By button to the Results screen (BGG Rank, Play Time, or Complexity, each with a default you can set in Settings), and the number next to each game now matches whichever sort is active. The \"Results\" heading is easier to read over the background now too. And the Play Time icon got a redesign — the clock face is now split into four colored quarters, one per duration, that light up to show exactly which lengths are selected.",
+    },
     {
       version: 'V02.05',
       date: 'September 19, 2026',
@@ -1353,7 +1494,15 @@
     if (pavg <= 120) return 'Long';
     return 'Epic';
   }
-  var TIME_COLOR = { Short: 'time-short', Medium: 'time-medium', Long: 'time-long', Epic: 'time-epic' };
+  // Round 17: Play Time icon redesign — the clock face is split into four
+  // fixed quadrants, one per duration bucket, each lighting up in its own
+  // color independent of the others (12→3 Short/green, 3→6 Medium/yellow,
+  // 6→9 Long/orange, 9→12 Epic/red — see the .fig-1..fig-4 SVG paths and
+  // their matching CSS below). TIME_ORDER establishes which bucket reaches
+  // "furthest" around the face for hand-position purposes.
+  var TIME_QUADRANT_CLASS = { Short: 'time-has-short', Medium: 'time-has-medium', Long: 'time-has-long', Epic: 'time-has-epic' };
+  var TIME_ORDER = ['Short', 'Medium', 'Long', 'Epic'];
+  var TIME_HAND_ANGLE = { Short: 90, Medium: 180, Long: 270, Epic: 0 };
 
   function complexityMatches(gameCx, bucket) {
     if (bucket === 'Any') return true;
@@ -1412,7 +1561,7 @@
   }
 
   function recompute() {
-    currentResults = GAMES.filter(evaluate).sort(function (a, b) { return (b.r || 0) - (a.r || 0); });
+    currentResults = GAMES.filter(evaluate).sort(sortComparator(currentSort));
     var btn = document.getElementById('view-results-btn');
     var n = currentResults.length;
     btn.textContent = n === 0 ? 'No Results' : 'View ' + n + ' Result' + (n === 1 ? '' : 's');
@@ -1487,14 +1636,37 @@
     document.getElementById('label-time').textContent = 'How Long?';
     setRowLit('row-time', 'chip-time', has);
     var chip = document.getElementById('chip-time');
-    ['time-short', 'time-medium', 'time-long', 'time-epic'].forEach(function (c) { chip.classList.remove(c); });
-    // One bucket picked: caption + color show that bucket. Two or more:
-    // caption just says "Mixed" and the icon stays neutral (is-lit only).
+    ['time-has-short', 'time-has-medium', 'time-has-long', 'time-has-epic'].forEach(function (c) { chip.classList.remove(c); });
+    state.times.forEach(function (bucket) { chip.classList.add(TIME_QUADRANT_CLASS[bucket]); });
+
+    // Hour hand: points to the clockwise end of whichever selected bucket
+    // reaches furthest around the face (Short=3, Medium=6, Long=9, Epic=12),
+    // independent of whether the buckets in between are also selected.
+    // Nothing selected keeps today's original static hand untouched, per
+    // Jerry's explicit call — no rotation logic applies to it.
+    var defaultHand = document.getElementById('clock-hand-default');
+    var activeHand = document.getElementById('clock-hand-active');
+    if (!has) {
+      defaultHand.style.display = '';
+      activeHand.style.display = 'none';
+    } else {
+      var furthestIdx = -1;
+      state.times.forEach(function (bucket) {
+        var idx = TIME_ORDER.indexOf(bucket);
+        if (idx > furthestIdx) furthestIdx = idx;
+      });
+      defaultHand.style.display = 'none';
+      activeHand.style.display = '';
+      activeHand.setAttribute('transform', 'rotate(' + TIME_HAND_ANGLE[TIME_ORDER[furthestIdx]] + ' 12 12)');
+    }
+
+    // One bucket picked: caption shows that bucket. Two or three: caption
+    // just says "Mixed" (four is unreachable — selecting all of them resets
+    // the filter back to empty, see the time-grid toggle handler).
     var caption = document.getElementById('caption-time');
     if (state.times.length === 1) {
       caption.textContent = state.times[0];
       caption.classList.add('is-shown');
-      chip.classList.add(TIME_COLOR[state.times[0]]);
     } else if (state.times.length > 1) {
       caption.textContent = 'Mixed';
       caption.classList.add('is-shown');
@@ -1614,6 +1786,11 @@
       b.addEventListener('click', function () {
         var idx = state.times.indexOf(opt.v);
         if (idx === -1) { state.times.push(opt.v); } else { state.times.splice(idx, 1); }
+        // Round 17: selecting all four buckets is functionally identical to
+        // no Play Time filter at all — rather than show a "full rainbow"
+        // clock, Jerry wants completing the fourth selection to snap the
+        // filter straight back to empty (same as Clear), icon included.
+        if (state.times.length === 4) { state.times = []; }
         renderTimeGrid();
         renderAllRows();
       });
@@ -1903,6 +2080,7 @@
     if (id === 'picker-type') renderTypeGrid();
     if (id === 'picker-time') renderTimeGrid();
     if (id === 'picker-complexity') renderComplexityGrid();
+    if (id === 'picker-sort') applySortGridUI();
     if (id === 'picker-tags') {
       document.getElementById('tag-search').value = '';
       renderTagModeButtons();
@@ -1968,19 +2146,22 @@
   function renderResults() {
     var list = document.getElementById('top10-list');
     var countEl = document.getElementById('results-count');
+    var viewMoreBtn = document.getElementById('view-more-btn');
     list.innerHTML = '';
-    countEl.textContent = currentResults.length + ' game' + (currentResults.length === 1 ? '' : 's') + ', sorted by BGG rating';
+    countEl.textContent = currentResults.length + ' game' + (currentResults.length === 1 ? '' : 's') + ', ' + SORT_COUNT_LABEL[currentSort];
 
     if (!currentResults.length) {
       var empty = document.createElement('div');
       empty.className = 'empty-note';
       empty.textContent = 'Nothing fits that combination — try loosening a filter.';
       list.appendChild(empty);
+      viewMoreBtn.hidden = true;
       return;
     }
 
-    var top10 = currentResults.slice(0, 10);
-    top10.forEach(function (g, i) {
+    var shown = currentResults.slice(0, visibleCount);
+    viewMoreBtn.hidden = currentResults.length <= visibleCount;
+    shown.forEach(function (g, i) {
       var isExpanded = selectedGame === g;
       var row = document.createElement('div');
       row.className = 'top10-row' + (isExpanded ? ' is-expanded' : '');
@@ -2021,8 +2202,8 @@
     name.textContent = g.n;
     var rating = document.createElement('span');
     rating.className = 'top10-rating';
-    rating.style.color = ratingColor(g.r);
-    rating.textContent = (g.r || 0).toFixed(1);
+    rating.style.color = sortValueColor(g, currentSort);
+    rating.textContent = sortValueDisplay(g, currentSort);
 
     row.appendChild(name); row.appendChild(rating);
   }
@@ -2135,12 +2316,34 @@
   }
 
   document.getElementById('view-results-btn').addEventListener('click', function () {
+    // Entering results fresh always starts from the Settings default sort
+    // and the first page of 10, regardless of whatever was active last time.
+    currentSort = defaultSortOrder;
+    visibleCount = 10;
+    recompute();
     selectedGame = currentResults[0] || null;
     renderResults();
     goTo('results');
   });
   document.getElementById('back-to-search').addEventListener('click', function () { goTo('search'); });
   document.getElementById('back-to-search-feedback').addEventListener('click', function () { goTo('search'); });
+
+  document.getElementById('view-more-btn').addEventListener('click', function () {
+    visibleCount += 10;
+    renderResults();
+  });
+
+  document.querySelectorAll('#sort-grid .option-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      currentSort = b.getAttribute('data-sort');
+      visibleCount = 10;
+      recompute();
+      selectedGame = currentResults[0] || null;
+      renderResults();
+      applySortGridUI();
+      closePicker('picker-sort');
+    });
+  });
 
   // ---- Feedback screen (Round 13) — posts to the Worker's /api/feedback
   // endpoint, which emails the submission via Resend. Rating is a plain
