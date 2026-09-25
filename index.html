@@ -361,6 +361,29 @@
   .cta-results.has-results { box-shadow: var(--shadow), 0 0 20px 2px rgba(101, 190, 143, 0.55); }
   .cta-results:disabled { opacity: 0.55; cursor: default; box-shadow: var(--shadow); }
 
+  /* Round 18: "Surprise Me" — a secondary CTA right below the main results
+     button. Deliberately quieter (outlined, not filled) so it reads as a
+     lighter-weight alternative rather than competing with "View Results". */
+  .cta-surprise {
+    margin: 0 0 6px;
+    width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    border: 1.5px solid rgba(244, 241, 234, 0.35);
+    border-radius: 14px;
+    background: transparent;
+    color: var(--ink-dim);
+    font-family: var(--font-results);
+    font-weight: 600;
+    font-size: 15.5px;
+    letter-spacing: 0.02em;
+    padding: 11px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  }
+  .cta-surprise-icon { width: 17px; height: 17px; flex-shrink: 0; }
+  .cta-surprise:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.6); color: var(--ink); background: rgba(244, 241, 234, 0.06); }
+  .cta-surprise:disabled { opacity: 0.4; cursor: default; }
+
   /* ---- Footer badge (Round 14: pinned to the viewport so the Feedback
      bubble is reachable from the search screen AND the results screen
      without scrolling past a long results list first) ---- */
@@ -870,6 +893,10 @@
       </div>
 
       <button type="button" class="cta-results" id="view-results-btn">View 0 Results</button>
+      <button type="button" class="cta-surprise" id="surprise-btn" disabled>
+        <svg class="cta-surprise-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" stroke-width="2"/><circle cx="8.3" cy="8.3" r="1.6" fill="currentColor"/><circle cx="15.7" cy="8.3" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="8.3" cy="15.7" r="1.6" fill="currentColor"/><circle cx="15.7" cy="15.7" r="1.6" fill="currentColor"/></svg>
+        Surprise Me
+      </button>
     </section>
 
     <!-- RESULTS SCREEN -->
@@ -1420,8 +1447,13 @@
   // ---- Information panel: app credit + version/update-notes history
   // (Round 12, replaces the old Profile placeholder). Newest entry first;
   // add a new entry here at the top of the array with every future build. ----
-  var APP_VERSION = 'V02.06';
+  var APP_VERSION = 'V02.07';
   var VERSION_HISTORY = [
+    {
+      version: 'V02.07',
+      date: 'September 25, 2026',
+      notes: "New logo and app icon! The “Who's Playing?” badge now shows the actual player counts you picked (like “2-3” or “2,4”) instead of just how many you selected. Added a Surprise Me button on the search screen that jumps straight to a random pick from your top matches. And when nothing matches your filters, the app now tells you which specific filter is the problem instead of a generic “try loosening a filter” message.",
+    },
     {
       version: 'V02.06',
       date: 'September 22, 2026',
@@ -1560,6 +1592,66 @@
     return true;
   }
 
+  // Round 18: smarter zero-results messaging. Mirrors evaluate()'s six
+  // independent checks so any one of them can be skipped in isolation, to
+  // find whichever single filter is the actual bottleneck.
+  var FILTER_DEFS = [
+    { key: 'players', label: 'Player Count',
+      active: function () { return state.players.length > 0; },
+      check: function (g) { return state.players.some(function (p) { return catForPlayers(g, p) >= 1; }); } },
+    { key: 'age', label: 'Age',
+      active: function () { return state.youngestAge != null; },
+      check: function (g) { return !(state.youngestAge != null && g.age != null && state.youngestAge < g.age); } },
+    { key: 'type', label: 'Game Type',
+      active: function () { return state.types.length > 0; },
+      check: function (g) {
+        if (g.semiCoop) return true;
+        var gameType = isCooperative(g) ? 'Cooperative' : 'Competitive';
+        return state.types.indexOf(gameType) !== -1;
+      } },
+    { key: 'time', label: 'Play Time',
+      active: function () { return state.times.length > 0; },
+      check: function (g) { return state.times.indexOf(timeBucketFor(g.pavg)) !== -1; } },
+    { key: 'complexity', label: 'Complexity',
+      active: function () { return state.complexities.length > 0; },
+      check: function (g) { return state.complexities.some(function (c) { return complexityMatches(g.cx, c); }); } },
+    { key: 'tags', label: 'Tags',
+      active: function () { return state.tags.length > 0; },
+      check: function (g) {
+        if (state.tagMode === 'ALL') return state.tags.every(function (t) { return gameHasTag(g, t); });
+        return state.tags.some(function (t) { return gameHasTag(g, t); });
+      } }
+  ];
+
+  function evaluateSkipping(game, skipKey) {
+    for (var i = 0; i < FILTER_DEFS.length; i++) {
+      var f = FILTER_DEFS[i];
+      if (f.key === skipKey) continue;
+      if (!f.active()) continue;
+      if (!f.check(game)) return false;
+    }
+    return true;
+  }
+
+  // Finds the single active filter whose removal would unblock the most
+  // results and names it specifically; only falls back to the old generic
+  // message when no single filter's removal produces any results at all
+  // (i.e. it genuinely takes loosening two or more together), per Jerry's
+  // call to keep the multi-filter case simple.
+  function zeroResultsMessage() {
+    var activeFilters = FILTER_DEFS.filter(function (f) { return f.active(); });
+    var best = null;
+    activeFilters.forEach(function (f) {
+      var count = GAMES.filter(function (g) { return evaluateSkipping(g, f.key); }).length;
+      if (count > 0 && (!best || count > best.count)) best = { label: f.label, count: count };
+    });
+    if (best) {
+      return best.count + ' game' + (best.count === 1 ? '' : 's') + ' match' + (best.count === 1 ? 'es' : '') +
+        ' everything except ' + best.label + ' — try loosening that.';
+    }
+    return 'Nothing fits that combination — try loosening a filter.';
+  }
+
   function recompute() {
     currentResults = GAMES.filter(evaluate).sort(sortComparator(currentSort));
     var btn = document.getElementById('view-results-btn');
@@ -1567,6 +1659,7 @@
     btn.textContent = n === 0 ? 'No Results' : 'View ' + n + ' Result' + (n === 1 ? '' : 's');
     btn.disabled = n === 0;
     btn.classList.toggle('has-results', n > 0);
+    document.getElementById('surprise-btn').disabled = n === 0;
   }
 
   // ---- Row label / icon "lit" rendering ----
@@ -1592,6 +1685,35 @@
 
   function playerLabel(n) { return (n >= 6 ? '6+' : String(n)) + ' Player' + (n === 1 ? '' : 's'); }
 
+  // Round 18: the badge shows the actual selected player counts rather than
+  // just a count-of-selections. Consecutive picks collapse into a hyphenated
+  // range ("2-3"); non-consecutive picks are comma-separated ("2,4"); a run
+  // is grouped by consecutivity so a mix works too ("1-3,5"). Since 6 always
+  // means "6+" (six-or-more), any run that reaches 6 collapses to "N+"
+  // instead of a literal "...-6" (confirmed with Jerry: "5-6+" reads oddly,
+  // and "N+" is the more accurate description once the range's upper end is
+  // already unbounded) — this also naturally covers the existing single-6
+  // case ("6+" alone).
+  function playersBadgeText(selected) {
+    var sorted = selected.slice().sort(function (a, b) { return a - b; });
+    var groups = [];
+    var i = 0;
+    while (i < sorted.length) {
+      var start = sorted[i];
+      var end = start;
+      var j = i + 1;
+      while (j < sorted.length && sorted[j] === end + 1) { end = sorted[j]; j++; }
+      groups.push([start, end]);
+      i = j;
+    }
+    return groups.map(function (g) {
+      var start = g[0], end = g[1];
+      if (end >= 6) return start + '+';
+      if (start === end) return String(start);
+      return start + '-' + end;
+    }).join(',');
+  }
+
   function renderPlayersRow() {
     var hasPlayers = state.players.length > 0;
     var hasAge = state.youngestAge != null;
@@ -1605,7 +1727,7 @@
     setRowLit('row-players', 'chip-players', hasPlayers || hasAge);
     var badge = document.getElementById('badge-players');
     if (hasPlayers) {
-      badge.textContent = state.players.length === 1 ? (state.players[0] >= 6 ? '6+' : String(state.players[0])) : String(state.players.length);
+      badge.textContent = playersBadgeText(state.players);
       badge.classList.add('is-shown');
     } else { badge.classList.remove('is-shown'); }
     var ageBadge = document.getElementById('badge-players-age');
@@ -2153,7 +2275,7 @@
     if (!currentResults.length) {
       var empty = document.createElement('div');
       empty.className = 'empty-note';
-      empty.textContent = 'Nothing fits that combination — try loosening a filter.';
+      empty.textContent = zeroResultsMessage();
       list.appendChild(empty);
       viewMoreBtn.hidden = true;
       return;
@@ -2325,6 +2447,23 @@
     renderResults();
     goTo('results');
   });
+  // Round 18: "Surprise Me" — skips the ranked list entirely and jumps
+  // straight to a random pick from the top 5 current matches (flat odds,
+  // no rating-weighting — the pool is already curated to the best matches).
+  // Reuses the existing accordion/expanded-row rendering rather than a
+  // separate single-game view: the pick is always within the default
+  // visibleCount of 10, so it shows expanded in its normal ranked position.
+  document.getElementById('surprise-btn').addEventListener('click', function () {
+    currentSort = defaultSortOrder;
+    visibleCount = 10;
+    recompute();
+    if (!currentResults.length) return;
+    var pool = currentResults.slice(0, 5);
+    selectedGame = pool[Math.floor(Math.random() * pool.length)];
+    renderResults();
+    goTo('results');
+  });
+
   document.getElementById('back-to-search').addEventListener('click', function () { goTo('search'); });
   document.getElementById('back-to-search-feedback').addEventListener('click', function () { goTo('search'); });
 
